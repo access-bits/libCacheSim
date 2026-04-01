@@ -127,6 +127,7 @@ static inline cache_t *create_cache(const char *trace_path,
     }
   } else if (strcasecmp(eviction_algo, "belady") == 0) {
     if (strcasestr(trace_path, "oracleGeneral") == NULL &&
+        strcasestr(trace_path, "oracle_reverse") == NULL &&
         strcasestr(trace_path, "lcs") == NULL) {
       WARN("belady is only supported for oracleGeneral and lcs trace\n");
       WARN("to convert a trace to lcs format\n");
@@ -137,6 +138,7 @@ static inline cache_t *create_cache(const char *trace_path,
     cache = Belady_init(cc_params, eviction_params);
   } else if (strcasecmp(eviction_algo, "beladySize") == 0) {
     if (strcasestr(trace_path, "oracleGeneral") == NULL &&
+        strcasestr(trace_path, "oracle_reverse") == NULL &&
         strcasestr(trace_path, "lcs") == NULL) {
       WARN("beladySize is only supported for oracleGeneral and lcs trace\n");
       WARN("to convert a trace to lcs format\n");

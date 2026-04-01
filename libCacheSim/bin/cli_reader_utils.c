@@ -47,6 +47,8 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
   } else if (strcasecmp(trace_type_str, "oracleGeneralBin") == 0 ||
              strcasecmp(trace_type_str, "oracleGeneral") == 0) {
     return ORACLE_GENERAL_TRACE;
+  } else if (strcasecmp(trace_type_str, "oracleGeneralCompressedReverse") == 0) {
+    return ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE;
   } else if (strcasecmp(trace_type_str, "oracleSysTwrNS") == 0) {
     return ORACLE_SYS_TWRNS_TRACE;
   } else if (strcasecmp(trace_type_str, "valpinTrace") == 0) {

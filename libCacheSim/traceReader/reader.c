@@ -10,6 +10,7 @@
 
 #include "customizedReader/lcs.h"
 #include "customizedReader/oracle/oracleGeneralBin.h"
+#include "customizedReader/oracle/oracleGeneralCompressedReverse.h"
 #include "customizedReader/oracle/oracleTwrBin.h"
 #include "customizedReader/oracle/oracleTwrNSBin.h"
 #include "customizedReader/twrBin.h"
@@ -174,6 +175,9 @@ reader_t *setup_reader(const char *const trace_path,
     case ORACLE_GENERAL_TRACE:
       oracleGeneralBin_setup(reader);
       break;
+    case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
+      oracleGeneralCompressedReverse_setup(reader);
+      break;
     case ORACLE_SIM_TWR_TRACE:
       oracleSimTwrBin_setup(reader);
       break;
@@ -285,6 +289,9 @@ int read_one_req(reader_t *const reader, request_t *const req) {
         break;
       case ORACLE_GENERAL_TRACE:
         status = oracleGeneralBin_read_one_req(reader, req);
+        break;
+      case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
+        status = oracleGeneralCompressedReverse_read_one_req(reader, req);
         break;
       case ORACLE_SIM_TWR_TRACE:
         status = oracleSimTwrBin_read_one_req(reader, req);
@@ -591,6 +598,10 @@ int close_reader(reader_t *const reader) {
     if (reader->mapped_file != NULL) {
       munmap(reader->mapped_file, reader->file_size);
     }
+  }
+
+  if (reader->trace_type == ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
+    oracleGeneralCompressedReverse_teardown(reader);
   }
 
   if (reader->reader_params != NULL) {

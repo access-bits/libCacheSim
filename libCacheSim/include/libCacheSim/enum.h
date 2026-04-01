@@ -28,6 +28,7 @@ typedef enum {
   BIN_TRACE,
   PLAIN_TXT_TRACE,
   ORACLE_GENERAL_TRACE,
+  ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE,  // Compressed oracleGeneral in reverse order
   LCS_TRACE,  // libCacheSim format
 
   /* special trace */
@@ -50,6 +51,7 @@ static const char* const g_trace_type_name[UNKNOWN_TRACE + 2] = {
     "BIN_TRACE",
     "PLAIN_TXT_TRACE",
     "ORACLE_GENERAL_TRACE",
+    "ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE",
     "LCS_TRACE",
 
     "VSCSI_TRACE",
