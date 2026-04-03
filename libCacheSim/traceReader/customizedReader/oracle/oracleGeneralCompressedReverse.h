@@ -26,7 +26,7 @@ extern "C" {
  * Reading strategy:
  *   1. Parse .meta file to get batch positions and sizes
  *   2. Read batches from last to first using positions from .meta
- *   3. Within each batch, read entries from first to last (forward)
+ *   3. Within each batch, read entries from last to first (backward)
  *   Result: Time flows forward (0, 1, 2, ...) for the simulator
  */
 
@@ -54,7 +54,7 @@ typedef struct {
   /* Active buffer state */
   int active_buffer;       /* 0 or 1 - which buffer is currently being consumed */
   size_t buffer_size[2];   /* Number of entries in each buffer */
-  ssize_t buffer_pos[2];   /* Current position in each buffer (forward iteration) */
+  ssize_t buffer_pos[2];   /* Current position in each buffer (backward iteration, -1 = exhausted) */
   
   /* Batch information from .meta file */
   long *batch_positions;   /* File positions of each batch */
@@ -149,14 +149,13 @@ static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
           if (!ZSTD_isError(decompressed_size)) {
             pthread_mutex_lock(&params->mutex);
             params->buffer_size[buffer_idx] = decompressed_size / sizeof(oracle_reverse_entry_t);
-            params->buffer_pos[buffer_idx] = 0;
+            params->buffer_pos[buffer_idx] = (ssize_t)params->buffer_size[buffer_idx] - 1;
             
             /* Verify entry count */
             if (params->buffer_size[buffer_idx] != expected_entries) {
               ERROR("Entry count mismatch in batch %ld: expected %zu, got %zu\n",
                     batch_idx, expected_entries, params->buffer_size[buffer_idx]);
             }
-            
             success = true;
             pthread_mutex_unlock(&params->mutex);
           }
@@ -280,8 +279,8 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   params->active_buffer = 0;
   params->buffer_size[0] = 0;
   params->buffer_size[1] = 0;
-  params->buffer_pos[0] = 0;
-  params->buffer_pos[1] = 0;
+  params->buffer_pos[0] = -1;
+  params->buffer_pos[1] = -1;
   params->eof = false;
   
   /* Initialize thread state */
@@ -534,7 +533,7 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
   int active = params->active_buffer;
   
   /* Check if we need to load/switch to next batch */
-  if (params->buffer_pos[active] >= (ssize_t)params->buffer_size[active]) {
+  if (params->buffer_pos[active] < 0) {
     /* Current buffer exhausted */
     if (params->eof) {
       req->valid = FALSE;
@@ -566,7 +565,7 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
       }
       pthread_mutex_unlock(&params->mutex);
       
-      /* buffer_pos already set by worker thread to start of buffer */
+      /* buffer_pos already set by worker thread to end of buffer */
       
       /* Start decompressing next batch in background */
       params->current_batch--;
@@ -586,9 +585,9 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
     }
   }
   
-  /* Get current entry from active buffer (reading forward) */
+  /* Get current entry from active buffer (reading backward) */
   oracle_reverse_entry_t *entry = &params->entry_buffer[active][params->buffer_pos[active]];
-  params->buffer_pos[active]++;
+  params->buffer_pos[active]--;
 
   /* Fill request structure */
   req->clock_time = entry->clock_time;
