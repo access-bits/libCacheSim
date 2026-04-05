@@ -4,9 +4,9 @@ extern "C" {
 #endif
 
 /*
- * oracleGeneral compressed binary trace format - REVERSE chronological order
+ * Oracle LRU TLB compressed binary trace format - REVERSE chronological order
  *
- * This reader handles oracle files written in REVERSE chronological order.
+ * This reader handles LRU TLB oracle files written in REVERSE chronological order.
  * The file contains time T-1, T-2, ..., 0 (last to first).
  * The reader reads BACKWARD to present time 0, 1, 2, ... to the simulator.
  *
@@ -17,10 +17,10 @@ extern "C" {
  *
  * Entry format (after decompression, within each batch in reverse order):
  *   struct {
- *     uint32_t clock_time;
- *     uint64_t obj_id;
- *     uint32_t obj_size;
- *     int64_t next_access_vtime;
+ *     uint64_t vaddr;
+ *     uint8_t tlb_miss;
+ *     uint8_t cpu;
+ *     int64_t page_next_access_time;
  *   };
  *
  * Reading strategy:
@@ -35,18 +35,18 @@ extern "C" {
 #include <zstd.h>
 #include <pthread.h>
 
-#define ORACLE_REVERSE_BUFFER_SIZE (24 * 1024 * 1024)  /* 24M entries per batch */
+#define ORACLE_LRU_TLB_REVERSE_BUFFER_SIZE (24 * 1024 * 1024)  /* 24M entries per batch */
 
 typedef struct {
-  uint32_t clock_time;
-  uint64_t obj_id;
-  uint32_t obj_size;
-  int64_t next_access_vtime;
-} __attribute__((packed)) oracle_reverse_entry_t;
+  uint64_t vaddr;
+  uint8_t tlb_miss;
+  uint8_t cpu;
+  int64_t page_next_access_time;
+} __attribute__((packed)) oracle_lru_tlb_reverse_entry_t;
 
 typedef struct {
   /* Ping-pong decompression buffers (double buffering) */
-  oracle_reverse_entry_t *entry_buffer[2];  /* Two buffers for ping-pong */
+  oracle_lru_tlb_reverse_entry_t *entry_buffer[2];  /* Two buffers for ping-pong */
   char *compressed_buf;                     /* Single compressed buffer (worker uses sequentially) */
   size_t buffer_capacity;
   size_t compressed_buf_capacity;
@@ -81,11 +81,11 @@ typedef struct {
   
   /* File position tracking */
   bool eof;
-} oracle_reverse_params_t;
+} oracle_lru_tlb_reverse_params_t;
 
 /* Background decompression thread worker */
-static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
-  oracle_reverse_params_t *params = (oracle_reverse_params_t *)arg;
+static void* oracleLruTlbCompressedReverse_decompress_worker(void *arg) {
+  oracle_lru_tlb_reverse_params_t *params = (oracle_lru_tlb_reverse_params_t *)arg;
   
   while (true) {
     pthread_mutex_lock(&params->mutex);
@@ -142,13 +142,13 @@ static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
           /* Decompress */
           size_t decompressed_size = ZSTD_decompress(
             params->entry_buffer[buffer_idx],
-            params->buffer_capacity * sizeof(oracle_reverse_entry_t),
+            params->buffer_capacity * sizeof(oracle_lru_tlb_reverse_entry_t),
             params->compressed_buf,
             compressed_size);
           
           if (!ZSTD_isError(decompressed_size)) {
             pthread_mutex_lock(&params->mutex);
-            params->buffer_size[buffer_idx] = decompressed_size / sizeof(oracle_reverse_entry_t);
+            params->buffer_size[buffer_idx] = decompressed_size / sizeof(oracle_lru_tlb_reverse_entry_t);
             params->buffer_pos[buffer_idx] = (ssize_t)params->buffer_size[buffer_idx] - 1;
             
             /* Verify entry count */
@@ -180,7 +180,7 @@ static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
 }
 
 /* Request decompression of a batch into specified buffer */
-static inline void request_decompress(oracle_reverse_params_t *params, 
+static inline void request_decompress_lru_tlb(oracle_lru_tlb_reverse_params_t *params, 
                                       int buffer_idx, ssize_t batch_idx) {
   pthread_mutex_lock(&params->mutex);
   params->decompress_buffer_idx = buffer_idx;
@@ -192,7 +192,7 @@ static inline void request_decompress(oracle_reverse_params_t *params,
 }
 
 /* Wait for decompression to complete and switch to the newly decompressed buffer */
-static inline bool switch_buffer(oracle_reverse_params_t *params) {
+static inline bool switch_buffer_lru_tlb(oracle_lru_tlb_reverse_params_t *params) {
   int next_buffer = 1 - params->active_buffer;
   
   /* Wait for decompression to complete */
@@ -217,7 +217,7 @@ static inline bool switch_buffer(oracle_reverse_params_t *params) {
     size_t pct = batches_done * 100 / params->n_batches;
     static size_t last_pct = -1UL;
     if (pct / 5 != last_pct / 5) {
-      INFO("oracleGeneralCompressedReverse: %zu/%zu batches read (%zu%%)\n",
+      INFO("oracleLruTlbCompressedReverse: %zu/%zu batches read (%zu%%)\n",
            batches_done, params->n_batches, pct);
       last_pct = pct;
     }
@@ -228,7 +228,7 @@ static inline bool switch_buffer(oracle_reverse_params_t *params) {
   if (params->current_batch >= 0) {
     /* Request decompression of next batch into the now-inactive buffer */
     int inactive_buffer = 1 - params->active_buffer;
-    request_decompress(params, inactive_buffer, params->current_batch);
+    request_decompress_lru_tlb(params, inactive_buffer, params->current_batch);
   } else {
     params->eof = true;
   }
@@ -236,29 +236,26 @@ static inline bool switch_buffer(oracle_reverse_params_t *params) {
   return true;
 }
 
-static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
+static inline int oracleLruTlbCompressedReverse_setup(reader_t *reader) {
   /* No header in binary file - read .meta file for batch information */
   
-  reader->trace_type = ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE;
+  reader->trace_type = ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE;
   reader->trace_format = BINARY_TRACE_FORMAT;
-  reader->item_size = sizeof(oracle_reverse_entry_t);
+  reader->item_size = sizeof(oracle_lru_tlb_reverse_entry_t);
   reader->obj_id_is_num = true;
   reader->trace_start_offset = 0;  /* No header */
 
-  // /* Mark as zstd so setup_reader skips the file-size sanity check */
-  // reader->is_zstd_file = true;
-
   /* Allocate reader-specific parameters */
-  oracle_reverse_params_t *params = 
-    (oracle_reverse_params_t *)malloc(sizeof(oracle_reverse_params_t));
+  oracle_lru_tlb_reverse_params_t *params = 
+    (oracle_lru_tlb_reverse_params_t *)malloc(sizeof(oracle_lru_tlb_reverse_params_t));
   
-  params->buffer_capacity = ORACLE_REVERSE_BUFFER_SIZE;
+  params->buffer_capacity = ORACLE_LRU_TLB_REVERSE_BUFFER_SIZE;
   
   /* Allocate ping-pong buffers */
-  params->entry_buffer[0] = (oracle_reverse_entry_t *)malloc(
-    sizeof(oracle_reverse_entry_t) * params->buffer_capacity);
-  params->entry_buffer[1] = (oracle_reverse_entry_t *)malloc(
-    sizeof(oracle_reverse_entry_t) * params->buffer_capacity);
+  params->entry_buffer[0] = (oracle_lru_tlb_reverse_entry_t *)malloc(
+    sizeof(oracle_lru_tlb_reverse_entry_t) * params->buffer_capacity);
+  params->entry_buffer[1] = (oracle_lru_tlb_reverse_entry_t *)malloc(
+    sizeof(oracle_lru_tlb_reverse_entry_t) * params->buffer_capacity);
   
   if (!params->entry_buffer[0] || !params->entry_buffer[1]) {
     ERROR("Failed to allocate entry buffers\n");
@@ -269,7 +266,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   }
   
   params->compressed_buf_capacity = ZSTD_compressBound(
-    params->buffer_capacity * sizeof(oracle_reverse_entry_t)) + 1024;
+    params->buffer_capacity * sizeof(oracle_lru_tlb_reverse_entry_t)) + 1024;
   params->compressed_buf = (char *)malloc(params->compressed_buf_capacity);
   
   if (!params->compressed_buf) {
@@ -298,9 +295,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   pthread_mutex_init(&params->mutex, NULL);
   pthread_cond_init(&params->cond, NULL);
   
-  /* Open a second file handle for the background decompression thread.
-   * reader->file is NULL for binary traces (libCacheSim mmaps them instead),
-   * so we open the path directly rather than dup'ing reader->file. */
+  /* Open a second file handle for the background decompression thread */
   params->file_handle = fopen(reader->trace_path, "rb");
   if (!params->file_handle) {
     ERROR("Failed to open file handle for background thread: %s\n",
@@ -321,7 +316,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   FILE *meta_fp = fopen(meta_path, "r");
   if (!meta_fp) {
     ERROR("Failed to open .meta file: %s\n", meta_path);
-    ERROR("The .meta file is required for reverse oracle traces\n");
+    ERROR("The .meta file is required for reverse oracle LRU TLB traces\n");
     fclose(params->file_handle);
     free(params->entry_buffer[0]);
     free(params->entry_buffer[1]);
@@ -458,8 +453,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
     return 1;
   }
   
-  /* Sum entry counts across all batches and cache as n_total_req so that
-   * get_num_of_req() does not clone the reader and do a full dry-read. */
+  /* Sum entry counts across all batches and cache as n_total_req */
   uint64_t total_entries = 0;
   for (size_t i = 0; i < params->n_batches; i++) total_entries += params->batch_entries[i];
   reader->n_total_req = (int64_t)total_entries;
@@ -473,7 +467,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   
   /* Start background decompression thread */
   if (pthread_create(&params->decompress_thread, NULL, 
-                     oracleGeneralCompressedReverse_decompress_worker, params) != 0) {
+                     oracleLruTlbCompressedReverse_decompress_worker, params) != 0) {
     ERROR("Failed to create background decompression thread\n");
     fclose(params->file_handle);
     free(params->entry_buffer[0]);
@@ -489,16 +483,16 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   }
   params->thread_running = true;
   
-  INFO("Setup reverse oracle reader: %zu batches, entry_size=%zu, background decompression enabled\n", 
-       params->n_batches, sizeof(oracle_reverse_entry_t));
+  INFO("Setup LRU TLB reverse oracle reader: %zu batches, entry_size=%zu, background decompression enabled\n", 
+       params->n_batches, sizeof(oracle_lru_tlb_reverse_entry_t));
   
   return 0;
 }
 
-static inline void oracleGeneralCompressedReverse_teardown(reader_t *reader) {
+static inline void oracleLruTlbCompressedReverse_teardown(reader_t *reader) {
   if (reader->reader_params != NULL) {
-    oracle_reverse_params_t *params = 
-      (oracle_reverse_params_t *)reader->reader_params;
+    oracle_lru_tlb_reverse_params_t *params = 
+      (oracle_lru_tlb_reverse_params_t *)reader->reader_params;
     
     /* Stop background thread */
     if (params->thread_running) {
@@ -530,10 +524,10 @@ static inline void oracleGeneralCompressedReverse_teardown(reader_t *reader) {
   }
 }
 
-static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
+static inline int oracleLruTlbCompressedReverse_read_one_req(reader_t *reader,
                                                               request_t *req) {
-  oracle_reverse_params_t *params = 
-    (oracle_reverse_params_t *)reader->reader_params;
+  oracle_lru_tlb_reverse_params_t *params = 
+    (oracle_lru_tlb_reverse_params_t *)reader->reader_params;
   
   int active = params->active_buffer;
   
@@ -555,7 +549,7 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
       }
       
       /* Request decompression and wait for it */
-      request_decompress(params, active, params->current_batch);
+      request_decompress_lru_tlb(params, active, params->current_batch);
       
       pthread_mutex_lock(&params->mutex);
       while (!params->decompress_ready && !params->decompress_error) {
@@ -576,13 +570,13 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
       params->current_batch--;
       if (params->current_batch >= 0) {
         int next_buffer = 1 - active;
-        request_decompress(params, next_buffer, params->current_batch);
+        request_decompress_lru_tlb(params, next_buffer, params->current_batch);
       } else {
         params->eof = true;
       }
     } else {
       /* Subsequent loads: switch to already-decompressed buffer */
-      if (!switch_buffer(params)) {
+      if (!switch_buffer_lru_tlb(params)) {
         req->valid = FALSE;
         return 1;
       }
@@ -591,24 +585,19 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
   }
   
   /* Get current entry from active buffer (reading backward) */
-  oracle_reverse_entry_t *entry = &params->entry_buffer[active][params->buffer_pos[active]];
+  oracle_lru_tlb_reverse_entry_t *entry = &params->entry_buffer[active][params->buffer_pos[active]];
   params->buffer_pos[active]--;
 
   /* Fill request structure */
-  req->clock_time = entry->clock_time;
-  /* Fill request structure.
-   * clock_time in the stored entry is uint32_t and wraps for traces with
-   * >4B entries, so use the reader's sequential request counter instead. */
-  // req->clock_time = (int64_t)reader->n_read_req;
-  req->obj_id = entry->obj_id;
-  req->obj_size = entry->obj_size;
-  req->next_access_vtime = entry->next_access_vtime;
+  req->clock_time = (int64_t)reader->n_read_req;
+  req->obj_id = entry->vaddr;
+  req->obj_size = 1;  /* Page size = 1 */
+  req->next_access_vtime = entry->page_next_access_time;
   
   if (req->next_access_vtime == -1 || req->next_access_vtime == INT64_MAX) {
     req->next_access_vtime = MAX_REUSE_DISTANCE;
   }
 
-  
   req->valid = TRUE;
   
   return 0;

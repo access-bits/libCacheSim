@@ -29,6 +29,9 @@ typedef enum {
   PLAIN_TXT_TRACE,
   ORACLE_GENERAL_TRACE,
   ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE,  // Compressed oracleGeneral in reverse order
+  ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE,  // Compressed LRU TLB oracle in reverse order
+  ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE,  // Same format, passes tlb_miss/cpu to algorithm
+  ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE,  // Belady TLB trace, passes tlb_miss/cpu/next_access_ts
   LCS_TRACE,  // libCacheSim format
 
   /* special trace */
@@ -52,6 +55,9 @@ static const char* const g_trace_type_name[UNKNOWN_TRACE + 2] = {
     "PLAIN_TXT_TRACE",
     "ORACLE_GENERAL_TRACE",
     "ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE",
+    "ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE",
+    "ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE",
+    "ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE",
     "LCS_TRACE",
 
     "VSCSI_TRACE",

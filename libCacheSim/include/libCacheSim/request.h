@@ -68,6 +68,12 @@ typedef struct request {
   bool valid; /* indicate whether request is valid request
                * it is invalid if the trace reaches the end */
 
+  /* TLB simulation fields (set by TLB-aware trace readers) */
+  uint8_t tlb_miss;  /* 1 = TLB miss, 0 = TLB hit (from trace) */
+  uint8_t cpu_id;    /* CPU that issued this access (from trace) */
+  int64_t next_access_ts;  /* next access timestamp for this page on this CPU
+                            * used by Belady TLB simulation for eviction */
+
   int32_t n_features;
   int32_t features[N_MAX_FEATURES];
 

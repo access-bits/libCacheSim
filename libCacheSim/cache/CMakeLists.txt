@@ -28,6 +28,8 @@ set(eviction_sources_c
         eviction/ARC.c
         eviction/ARCv0.c         # an inefficient version but easier to understand
         eviction/Belady.c
+        eviction/BeladyLruTlbFiltered.c
+        eviction/BeladyBeladyTlbFiltered.c
         eviction/BeladySize.c
         eviction/CAR.c
         eviction/Cacheus.c

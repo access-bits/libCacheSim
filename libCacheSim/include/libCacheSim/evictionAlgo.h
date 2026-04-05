@@ -47,6 +47,12 @@ cache_t *ARCv0_init(const common_cache_params_t ccache_params,
 cache_t *Belady_init(const common_cache_params_t ccache_params,
                      const char *cache_specific_params);
 
+cache_t *BeladyLruTlbFiltered_init(const common_cache_params_t ccache_params,
+                                   const char *cache_specific_params);
+
+cache_t *BeladyBeladyTlbFiltered_init(const common_cache_params_t ccache_params,
+                                      const char *cache_specific_params);
+
 cache_t *BeladySize_init(const common_cache_params_t ccache_params,
                          const char *cache_specific_params);
 

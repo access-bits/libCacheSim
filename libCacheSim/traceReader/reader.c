@@ -11,6 +11,9 @@
 #include "customizedReader/lcs.h"
 #include "customizedReader/oracle/oracleGeneralBin.h"
 #include "customizedReader/oracle/oracleGeneralCompressedReverse.h"
+#include "customizedReader/oracle/oracleLruTlbCompressedReverse.h"
+#include "customizedReader/oracle/oracleLruTlbCompressedReverseTlbSim.h"
+#include "customizedReader/oracle/oracleBeladyTlbCompressedReverseTlbSim.h"
 #include "customizedReader/oracle/oracleTwrBin.h"
 #include "customizedReader/oracle/oracleTwrNSBin.h"
 #include "customizedReader/twrBin.h"
@@ -178,6 +181,15 @@ reader_t *setup_reader(const char *const trace_path,
     case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
       oracleGeneralCompressedReverse_setup(reader);
       break;
+    case ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE:
+      oracleLruTlbCompressedReverse_setup(reader);
+      break;
+    case ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
+      oracleLruTlbCompressedReverseTlbSim_setup(reader);
+      break;
+    case ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
+      oracleBeladyTlbCompressedReverseTlbSim_setup(reader);
+      break;
     case ORACLE_SIM_TWR_TRACE:
       oracleSimTwrBin_setup(reader);
       break;
@@ -198,7 +210,11 @@ reader_t *setup_reader(const char *const trace_path,
       abort();
   }
 
-  if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file) {
+  if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file &&
+      reader->trace_type != ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE &&
+      reader->trace_type != ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE &&
+      reader->trace_type != ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE &&
+      reader->trace_type != ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE) {
     ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
     if (data_region_size % reader->item_size != 0) {
       WARN(
@@ -225,6 +241,10 @@ reader_t *setup_reader(const char *const trace_path,
     // from compressed trace without reading the tracee
     reader->n_total_req = 0;
   }
+
+  /* Compressed reverse traces set n_total_req from .meta file during setup;
+   * don't let the generic zstd/binary logic overwrite it. */
+  /* (n_total_req is already set correctly by oracleGeneralCompressedReverse_setup) */
 
   close(fd);
   return reader;
@@ -292,6 +312,15 @@ int read_one_req(reader_t *const reader, request_t *const req) {
         break;
       case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
         status = oracleGeneralCompressedReverse_read_one_req(reader, req);
+        break;
+      case ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE:
+        status = oracleLruTlbCompressedReverse_read_one_req(reader, req);
+        break;
+      case ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
+        status = oracleLruTlbCompressedReverseTlbSim_read_one_req(reader, req);
+        break;
+      case ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
+        status = oracleBeladyTlbCompressedReverseTlbSim_read_one_req(reader, req);
         break;
       case ORACLE_SIM_TWR_TRACE:
         status = oracleSimTwrBin_read_one_req(reader, req);
@@ -602,6 +631,18 @@ int close_reader(reader_t *const reader) {
 
   if (reader->trace_type == ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
     oracleGeneralCompressedReverse_teardown(reader);
+  }
+
+  if (reader->trace_type == ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE) {
+    oracleLruTlbCompressedReverse_teardown(reader);
+  }
+
+  if (reader->trace_type == ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE) {
+    oracleLruTlbCompressedReverseTlbSim_teardown(reader);
+  }
+
+  if (reader->trace_type == ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE) {
+    oracleBeladyTlbCompressedReverseTlbSim_teardown(reader);
   }
 
   if (reader->reader_params != NULL) {

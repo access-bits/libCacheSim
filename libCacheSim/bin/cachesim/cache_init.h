@@ -127,7 +127,7 @@ static inline cache_t *create_cache(const char *trace_path,
     }
   } else if (strcasecmp(eviction_algo, "belady") == 0) {
     if (strcasestr(trace_path, "oracleGeneral") == NULL &&
-        strcasestr(trace_path, "oracle_reverse") == NULL &&
+        strcasestr(trace_path, "oracle-reverse") == NULL &&
         strcasestr(trace_path, "lcs") == NULL) {
       WARN("belady is only supported for oracleGeneral and lcs trace\n");
       WARN("to convert a trace to lcs format\n");
@@ -138,7 +138,6 @@ static inline cache_t *create_cache(const char *trace_path,
     cache = Belady_init(cc_params, eviction_params);
   } else if (strcasecmp(eviction_algo, "beladySize") == 0) {
     if (strcasestr(trace_path, "oracleGeneral") == NULL &&
-        strcasestr(trace_path, "oracle_reverse") == NULL &&
         strcasestr(trace_path, "lcs") == NULL) {
       WARN("beladySize is only supported for oracleGeneral and lcs trace\n");
       WARN("to convert a trace to lcs format\n");
@@ -148,6 +147,26 @@ static inline cache_t *create_cache(const char *trace_path,
     }
     cc_params.hashpower = MAX(cc_params.hashpower - 8, 16);
     cache = BeladySize_init(cc_params, eviction_params);
+  } else if (strcasecmp(eviction_algo, "beladyLruTlbFiltered") == 0 ||
+             strcasecmp(eviction_algo, "belady-lru-tlb-filtered") == 0) {
+    if (strcasestr(trace_path, "oracle-lru-tlb-filtered") == NULL) {
+      WARN("beladyLruTlbFiltered is only supported for oracle-lru-tlb-filtered trace\n");
+      WARN("to convert a trace to oracle-lru-tlb-filtered format\n");
+      WARN("./bin/traceConv input_trace trace_format output_trace\n");
+      WARN("./bin/traceConv ../data/cloudPhysicsIO.txt txt\n");
+      exit(1);
+    }
+    cache = BeladyLruTlbFiltered_init(cc_params, eviction_params);
+  } else if (strcasecmp(eviction_algo, "beladyBeladyTlbFiltered") == 0 ||
+             strcasecmp(eviction_algo, "belady-belady-tlb-filtered") == 0) {
+    if (strcasestr(trace_path, "oracle-belady-tlb-filtered") == NULL) {
+      WARN("beladyBeladyTlbFiltered is only supported for oracle-belady-tlb-filtered trace\n");
+      WARN("to convert a trace to oracle-belady-tlb-filtered format\n");
+      WARN("./bin/traceConv input_trace trace_format output_trace\n");
+      WARN("./bin/traceConv ../data/cloudPhysicsIO.txt txt\n");
+      exit(1);
+    }
+    cache = BeladyBeladyTlbFiltered_init(cc_params, eviction_params);
   } else {
     ERROR("do not support algorithm %s\n", eviction_algo);
     abort();

@@ -77,6 +77,16 @@ typedef struct Belady_obj_metadata {
   int64_t next_access_vtime;
 } Belady_obj_metadata_t;
 
+typedef struct BeladyLruTlbFiltered_obj_metadata {
+  void *pq_node;
+  int64_t next_access_vtime;
+} BeladyLruTlbFiltered_obj_metadata_t;
+
+typedef struct BeladyBeladyTlbFiltered_obj_metadata {
+  void *pq_node;
+  int64_t next_access_vtime;
+} BeladyBeladyTlbFiltered_obj_metadata_t;
+
 typedef struct {
   bool is_LIR;
   bool in_cache;
@@ -179,6 +189,8 @@ typedef struct cache_obj {
     Hyperbolic_obj_metadata_t hyperbolic;
     Random_obj_metadata_t Random;
     Belady_obj_metadata_t Belady;
+    BeladyLruTlbFiltered_obj_metadata_t BeladyLruTlbFiltered;
+    BeladyBeladyTlbFiltered_obj_metadata_t BeladyBeladyTlbFiltered;
     FIFO_Merge_obj_metadata_t FIFO_Merge;
     FIFO_Reinsertion_obj_metadata_t FIFO_Reinsertion;
     SFIFO_obj_metadata_t SFIFO;
