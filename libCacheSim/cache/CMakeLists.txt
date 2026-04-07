@@ -30,6 +30,7 @@ set(eviction_sources_c
         eviction/Belady.c
         eviction/BeladyLruTlbFiltered.c
         eviction/BeladyBeladyTlbFiltered.c
+        eviction/LruLruTlbFiltered.c
         eviction/BeladySize.c
         eviction/CAR.c
         eviction/Cacheus.c

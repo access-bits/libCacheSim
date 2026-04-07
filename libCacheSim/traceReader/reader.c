@@ -14,6 +14,7 @@
 #include "customizedReader/oracle/oracleLruTlbCompressedReverse.h"
 #include "customizedReader/oracle/oracleLruTlbCompressedReverseTlbSim.h"
 #include "customizedReader/oracle/oracleBeladyTlbCompressedReverseTlbSim.h"
+#include "customizedReader/oracle/mergedTrace.h"
 #include "customizedReader/oracle/oracleTwrBin.h"
 #include "customizedReader/oracle/oracleTwrNSBin.h"
 #include "customizedReader/twrBin.h"
@@ -190,6 +191,9 @@ reader_t *setup_reader(const char *const trace_path,
     case ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
       oracleBeladyTlbCompressedReverseTlbSim_setup(reader);
       break;
+    case MERGED_TRACE:
+      mergedTrace_setup(reader);
+      break;
     case ORACLE_SIM_TWR_TRACE:
       oracleSimTwrBin_setup(reader);
       break;
@@ -214,7 +218,8 @@ reader_t *setup_reader(const char *const trace_path,
       reader->trace_type != ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE &&
       reader->trace_type != ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE &&
       reader->trace_type != ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE &&
-      reader->trace_type != ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE) {
+      reader->trace_type != ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE &&
+      reader->trace_type != MERGED_TRACE) {
     ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
     if (data_region_size % reader->item_size != 0) {
       WARN(
@@ -321,6 +326,9 @@ int read_one_req(reader_t *const reader, request_t *const req) {
         break;
       case ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE:
         status = oracleBeladyTlbCompressedReverseTlbSim_read_one_req(reader, req);
+        break;
+      case MERGED_TRACE:
+        status = mergedTrace_read_one_req(reader, req);
         break;
       case ORACLE_SIM_TWR_TRACE:
         status = oracleSimTwrBin_read_one_req(reader, req);
@@ -643,6 +651,10 @@ int close_reader(reader_t *const reader) {
 
   if (reader->trace_type == ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE) {
     oracleBeladyTlbCompressedReverseTlbSim_teardown(reader);
+  }
+
+  if (reader->trace_type == MERGED_TRACE) {
+    mergedTrace_teardown(reader);
   }
 
   if (reader->reader_params != NULL) {

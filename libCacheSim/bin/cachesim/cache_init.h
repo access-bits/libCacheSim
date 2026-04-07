@@ -167,6 +167,13 @@ static inline cache_t *create_cache(const char *trace_path,
       exit(1);
     }
     cache = BeladyBeladyTlbFiltered_init(cc_params, eviction_params);
+  } else if (strcasecmp(eviction_algo, "lruLruTlbFiltered") == 0 ||
+             strcasecmp(eviction_algo, "lru-lru-tlb-filtered") == 0) {
+    if (strcasestr(trace_path, "merged") == NULL) {
+      WARN("lruLruTlbFiltered requires oracleGeneral / oracle-reverse / lcs / merged trace\n");
+      exit(1);
+    }
+    cache = LruLruTlbFiltered_init(cc_params, eviction_params);
   } else {
     ERROR("do not support algorithm %s\n", eviction_algo);
     abort();

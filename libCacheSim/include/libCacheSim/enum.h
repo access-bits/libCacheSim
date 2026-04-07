@@ -32,6 +32,7 @@ typedef enum {
   ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE,  // Compressed LRU TLB oracle in reverse order
   ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE,  // Same format, passes tlb_miss/cpu to algorithm
   ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE,  // Belady TLB trace, passes tlb_miss/cpu/next_access_ts
+  MERGED_TRACE,  // merge_traces output: forward chronological, zstd-compressed (vaddr:8, cpu:1)
   LCS_TRACE,  // libCacheSim format
 
   /* special trace */
@@ -58,6 +59,7 @@ static const char* const g_trace_type_name[UNKNOWN_TRACE + 2] = {
     "ORACLE_LRU_TLB_COMPRESSED_REVERSE_TRACE",
     "ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE",
     "ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE",
+    "MERGED_TRACE",
     "LCS_TRACE",
 
     "VSCSI_TRACE",

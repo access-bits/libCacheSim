@@ -176,15 +176,15 @@ cache_t *BeladyLruTlbFiltered_init(const common_cache_params_t ccache_params,
 static void BeladyLruTlbFiltered_free(cache_t *cache) {
   BeladyLruTlbFiltered_params_t *params = cache->eviction_params;
 
-  /* Print statistics */
-  printf("=== BeladyLruTlbFiltered Statistics ===\n");
+  /* Print TLB violation statistics */
+  printf("=== BeladyLruTlbFiltered TLB Violation Statistics ===\n");
   printf("Total accesses:       %lu\n", (unsigned long)params->total_accesses);
   printf("Total evictions:      %lu\n", (unsigned long)params->total_evictions);
-  // printf("Violation Type 1 (TLB sim mismatch):   %lu\n",
-  //        (unsigned long)params->violation_type1);
-  // printf("Violation Type 2 (evict TLB-resident): %lu\n",
-  //        (unsigned long)params->violation_type2);
-  printf("=======================================\n");
+  printf("Violation Type 1 (TLB sim mismatch):   %lu\n",
+         (unsigned long)params->violation_type1);
+  printf("Violation Type 2 (evict TLB-resident): %lu\n",
+         (unsigned long)params->violation_type2);
+  printf("====================================================\n");
 
   pq_node_t *node = pqueue_pop(params->pq);
   while (node) {
@@ -221,24 +221,24 @@ static bool BeladyLruTlbFiltered_get(cache_t *cache, const request_t *req) {
   DEBUG_ASSERT(req->next_access_vtime != -2);
   BeladyLruTlbFiltered_params_t *params = cache->eviction_params;
 
-  /* TLB simulation: commented out — re-simulation on merged trace does not
-   * match per-CPU TLB results from the preprocessing pipeline.
-   */
+  /* TLB simulation: check if our simulated TLB agrees with the trace */
   params->total_accesses++;
-  // bool sim_hit = belady_tlb_access(params, req->cpu_id, (uint64_t)req->obj_id);
-  // bool trace_miss = (req->tlb_miss != 0);
-  // if (sim_hit == trace_miss) {
-  //   /* sim says hit but trace says miss, or vice versa */
-  //   params->violation_type1++;
-  // }
+  bool sim_hit = belady_tlb_access(params, req->cpu_id, (uint64_t)req->obj_id);
+  bool trace_miss = (req->tlb_miss != 0);
+  if (sim_hit == trace_miss) {
+    /* sim says hit but trace says miss, or vice versa */
+    params->violation_type1++;
+  }
 
-  /* Periodic report */
+  /* Periodic violation report */
   if (params->total_accesses - params->last_report_access >= BELADY_TLB_REPORT_INTERVAL) {
     params->last_report_access = params->total_accesses;
-    printf("[BeladyLruTlbFiltered @ %luM] accesses=%lu evictions=%lu\n",
+    printf("[BeladyLruTlbFiltered @ %luM] accesses=%lu evictions=%lu v1=%lu v2=%lu\n",
            (unsigned long)(params->total_accesses / 1000000),
            (unsigned long)params->total_accesses,
-           (unsigned long)params->total_evictions);
+           (unsigned long)params->total_evictions,
+           (unsigned long)params->violation_type1,
+           (unsigned long)params->violation_type2);
   }
 
   DEBUG_ASSERT(cache->n_obj == (int64_t)params->pq->size - 1);
@@ -362,11 +362,11 @@ static void BeladyLruTlbFiltered_evict(cache_t *cache, const request_t *req) {
       hashtable_find_obj_id(cache->hashtable, node->obj_id);
   DEBUG_ASSERT(node == obj_to_evict->BeladyLruTlbFiltered.pq_node);
 
-  /* Violation type 2: commented out — TLB sim disabled */
+  /* Violation type 2: check if evicted page is in any TLB */
   params->total_evictions++;
-  // if (belady_tlb_is_resident(params, (uint64_t)obj_to_evict->obj_id)) {
-  //   params->violation_type2++;
-  // }
+  if (belady_tlb_is_resident(params, (uint64_t)obj_to_evict->obj_id)) {
+    params->violation_type2++;
+  }
 
   obj_to_evict->BeladyLruTlbFiltered.pq_node = NULL;
   my_free(sizeof(pq_node_t), node);

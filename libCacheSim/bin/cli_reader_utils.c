@@ -55,6 +55,9 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
     return ORACLE_LRU_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE;
   } else if (strcasecmp(trace_type_str, "oracleBeladyTlbCompressedReverseTlbSim") == 0) {
     return ORACLE_BELADY_TLB_COMPRESSED_REVERSE_TLB_SIM_TRACE;
+  } else if (strcasecmp(trace_type_str, "mergedTrace") == 0 ||
+             strcasecmp(trace_type_str, "merged") == 0) {
+    return MERGED_TRACE;
   } else if (strcasecmp(trace_type_str, "oracleSysTwrNS") == 0) {
     return ORACLE_SYS_TWRNS_TRACE;
   } else if (strcasecmp(trace_type_str, "valpinTrace") == 0) {
