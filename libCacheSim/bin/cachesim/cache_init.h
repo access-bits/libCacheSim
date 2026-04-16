@@ -146,6 +146,13 @@ static inline cache_t *create_cache(const char *trace_path,
     }
     cc_params.hashpower = MAX(cc_params.hashpower - 8, 16);
     cache = BeladySize_init(cc_params, eviction_params);
+  } else if (strcasecmp(eviction_algo, "lruCoarse") == 0 ||
+             strcasecmp(eviction_algo, "lru-coarse") == 0) {
+    if (strcasestr(trace_path, "merged") == NULL) {
+      WARN("lruCoarse requires a merged trace\n");
+      exit(1);
+    }
+    cache = LruCoarse_init(cc_params, eviction_params);
   } else {
     ERROR("do not support algorithm %s\n", eviction_algo);
     abort();
