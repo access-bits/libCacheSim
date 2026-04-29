@@ -58,6 +58,7 @@ set(eviction_sources_c
         eviction/TwoQ.c
         eviction/WTinyLFU.c
         eviction/LruCoarse.c
+        eviction/LruCoarseRandom.c
 
         # these are sub-algorithms used by other algorithms
         eviction/CR_LFU.c

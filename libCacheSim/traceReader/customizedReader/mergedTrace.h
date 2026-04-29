@@ -26,7 +26,7 @@ extern "C" {
  *     into inactive buffer
  */
 
-#include "../binaryUtils.h"
+#include "binaryUtils.h"
 #include "libCacheSim/reader.h"
 #include <zstd.h>
 #include <pthread.h>

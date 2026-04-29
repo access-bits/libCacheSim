@@ -177,6 +177,9 @@ cache_t *WTinyLFU_init(const common_cache_params_t ccache_params,
 cache_t *LruCoarse_init(const common_cache_params_t ccache_params,
                         const char *cache_specific_params);
 
+cache_t *LruCoarseRandom_init(const common_cache_params_t ccache_params,
+                              const char *cache_specific_params);
+
 #ifdef ENABLE_3L_CACHE
 cache_t *ThreeLCache_init(const common_cache_params_t ccache_params,
                           const char *cache_specific_params);

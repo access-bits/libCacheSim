@@ -153,6 +153,13 @@ static inline cache_t *create_cache(const char *trace_path,
       exit(1);
     }
     cache = LruCoarse_init(cc_params, eviction_params);
+  } else if (strcasecmp(eviction_algo, "lruCoarseRandom") == 0 ||
+             strcasecmp(eviction_algo, "lru-coarse-random") == 0) {
+    if (strcasestr(trace_path, "merged") == NULL) {
+      WARN("lruCoarseRandom requires a merged trace\n");
+      exit(1);
+    }
+    cache = LruCoarseRandom_init(cc_params, eviction_params);
   } else {
     ERROR("do not support algorithm %s\n", eviction_algo);
     abort();
