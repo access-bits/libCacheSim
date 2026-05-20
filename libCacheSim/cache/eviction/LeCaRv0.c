@@ -305,13 +305,13 @@ static bool LeCaRv0_remove(cache_t *cache, obj_id_t obj_id) {
   LeCaRv0_params_t *params = (LeCaRv0_params_t *)(cache->eviction_params);
   cache_obj_t *obj = hashtable_find_obj_id(params->LRU->hashtable, obj_id);
   if (obj == NULL) {
-    ERROR("remove object %" PRIu64 "that is not cached in LRU\n", obj_id);
+    LOG(ERROR, STREAM_Eviction, "remove object %" PRIu64 "that is not cached in LRU\n", obj_id);
   }
   params->LRU->remove(params->LRU, obj_id);
 
   obj = hashtable_find_obj_id(params->LFU->hashtable, obj_id);
   if (obj == NULL) {
-    ERROR("remove object %" PRIu64 "that is not cached in LFU\n", obj_id);
+    LOG(ERROR, STREAM_Eviction, "remove object %" PRIu64 "that is not cached in LFU\n", obj_id);
     return false;
   }
   params->LFU->remove(params->LFU, obj_id);

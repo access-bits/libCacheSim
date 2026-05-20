@@ -275,14 +275,14 @@ static void LRU_Prob_parse_params(cache_t *cache,
     if (strcasecmp(key, "prob") == 0) {
       params->prob = (double)strtof(value, &end);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
 
     } else if (strcasecmp(key, "print") == 0) {
       printf("current parameters: %s\n", LRU_Prob_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

@@ -523,7 +523,11 @@ bool LIRS_can_insert(cache_t *cache, const request_t *req) {
   if (obj_s == NULL && obj_q == NULL) {
     if ((uint64_t)req->obj_size > params->lirs_limit ||
         (uint64_t)req->obj_size > params->hirs_limit) {
-      WARN_ONCE("object size too large\n");
+      static bool logged_large_obj_once = false;
+      if (!logged_large_obj_once) {
+        LOG(WARN, STREAM_Eviction, "object size too large\n");
+        logged_large_obj_once = true;
+      }
       // printf("request num: %ld\n", cache->n_req);
       return false;
     }
@@ -539,7 +543,7 @@ bool LIRS_can_insert(cache_t *cache, const request_t *req) {
     return true;
   }
 
-  INFO("LIRS_can_insert: should not reach here. n_req = %ld\n",
+  LOG(INFO, STREAM_Eviction, "LIRS_can_insert: should not reach here. n_req = %ld\n",
        (long)cache->n_req);
   abort();
 }

@@ -60,7 +60,7 @@ reader_t *setup_reader(const char *const trace_path,
     reader->is_zstd_file = true;
     reader->zstd_reader_p = create_zstd_reader(trace_path);
     if (!_info_printed) {
-      VERBOSE("opening a zstd compressed data\n");
+      LOG(DEBUG, STREAM_Reader, "opening a zstd compressed data\n");
     }
   }
 #endif
@@ -106,13 +106,13 @@ reader_t *setup_reader(const char *const trace_path,
   reader->trace_path = strdup(trace_path);
 
   if ((fd = open(trace_path, O_RDONLY)) < 0) {
-    ERROR("Unable to open '%s', %s\n", trace_path, strerror(errno));
+    LOG(ERROR, STREAM_Reader, "Unable to open '%s', %s\n", trace_path, strerror(errno));
     exit(1);
   }
 
   if ((fstat(fd, &st)) < 0) {
     close(fd);
-    ERROR("Unable to fstat '%s', %s\n", trace_path, strerror(errno));
+    LOG(ERROR, STREAM_Reader, "Unable to fstat '%s', %s\n", trace_path, strerror(errno));
     exit(1);
   }
   reader->file_size = st.st_size;
@@ -121,7 +121,7 @@ reader_t *setup_reader(const char *const trace_path,
       reader->trace_type == PLAIN_TXT_TRACE) {
     reader->file = fopen(reader->trace_path, "rb");
     if (reader->file == 0) {
-      ERROR("Failed to open %s: %s\n", reader->trace_path, strerror(errno));
+      LOG(ERROR, STREAM_Reader, "Failed to open %s: %s\n", reader->trace_path, strerror(errno));
       exit(1);
     }
 
@@ -132,7 +132,7 @@ reader_t *setup_reader(const char *const trace_path,
     reader->mapped_file = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
 #ifdef MADV_HUGEPAGE
     if (!_info_printed) {
-      VERBOSE("use hugepage\n");
+      LOG(DEBUG, STREAM_Reader, "use hugepage\n");
     }
     madvise(reader->mapped_file, st.st_size, MADV_HUGEPAGE | MADV_SEQUENTIAL);
 #endif
@@ -141,7 +141,7 @@ reader_t *setup_reader(const char *const trace_path,
     if ((reader->mapped_file) == MAP_FAILED) {
       close(fd);
       reader->mapped_file = NULL;
-      ERROR("Unable to allocate %llu bytes of memory, %s\n",
+      LOG(ERROR, STREAM_Reader, "Unable to allocate %llu bytes of memory, %s\n",
             (unsigned long long)st.st_size, strerror(errno));
       abort();
     }
@@ -152,7 +152,7 @@ reader_t *setup_reader(const char *const trace_path,
       reader->trace_format = TXT_TRACE_FORMAT;
       csv_setup_reader(reader);
       if (!check_delimiter(reader, init_params->delimiter)) {
-        ERROR("The trace does not use delimiter '%c', please check\n",
+        LOG(ERROR, STREAM_Reader, "The trace does not use delimiter '%c', please check\n",
               init_params->delimiter);
       }
       break;
@@ -190,14 +190,14 @@ reader_t *setup_reader(const char *const trace_path,
       valpinReader_setup(reader);
       break;
     default:
-      ERROR("cannot recognize trace type: %c\n", reader->trace_type);
+      LOG(ERROR, STREAM_Reader, "cannot recognize trace type: %c\n", reader->trace_type);
       abort();
   }
 
   if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file) {
     ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
     if (data_region_size % reader->item_size != 0) {
-      WARN(
+      LOG(WARN, STREAM_Reader, 
           "trace file size %lu - %lu is not multiple of item size %lu, mod "
           "%lu\n",
           (unsigned long)reader->file_size,
@@ -210,7 +210,7 @@ reader_t *setup_reader(const char *const trace_path,
   }
 
   if (reader->trace_format == INVALID_TRACE_FORMAT) {
-    ERROR(
+    LOG(ERROR, STREAM_Reader, 
         "trace reader setup did not set "
         "trace format (BINARY_TRACE_FORMAT/TXT_TRACE_FORMAT)\n");
     abort();
@@ -235,14 +235,14 @@ reader_t *setup_reader(const char *const trace_path,
  */
 int read_one_req(reader_t *const reader, request_t *const req) {
   if (reader->mmap_offset >= reader->file_size) {
-    DEBUG("read_one_req: end of file, current mmap_offset %zu, file size %zu\n",
+    LOG(DEBUG, STREAM_Reader, "read_one_req: end of file, current mmap_offset %zu, file size %zu\n",
           reader->mmap_offset, reader->file_size);
     req->valid = false;
     return 1;
   }
 
   if (reader->cap_at_n_req > 1 && reader->n_read_req >= reader->cap_at_n_req) {
-    DEBUG("read_one_req: processed %ld requests capped by the user\n",
+    LOG(DEBUG, STREAM_Reader, "read_one_req: processed %ld requests capped by the user\n",
           (long)reader->n_read_req);
     req->valid = false;
     return 1;
@@ -302,7 +302,7 @@ int read_one_req(reader_t *const reader, request_t *const req) {
         status = valpin_read_one_req(reader, req);
         break;
       default:
-        ERROR(
+        LOG(ERROR, STREAM_Reader, 
             "cannot recognize reader trace_type, given reader trace_type: "
             "%c\n",
             reader->trace_type);
@@ -316,7 +316,7 @@ int read_one_req(reader_t *const reader, request_t *const req) {
     sampler_t *sampler = reader->sampler;
     reader->sampler = NULL;
     while (!sampler->sample(sampler, req)) {
-      VERBOSE("skip one req: time %lu, obj_id %lu, size %lu at offset %zu\n",
+      LOG(DEBUG, STREAM_Reader, "skip one req: time %lu, obj_id %lu, size %lu at offset %zu\n",
               req->clock_time, req->obj_id, req->obj_size, offset_before_read);
       if (reader->read_direction == READ_FORWARD) {
         status = read_one_req(reader, req);
@@ -339,7 +339,7 @@ int read_one_req(reader_t *const reader, request_t *const req) {
     req->obj_cost = 1;
   }
 
-  VERBOSE(
+  LOG(DEBUG, STREAM_Reader, 
       "read one req: time %lu, obj_id %lu, size %lu, cost %lu at offset %zu\n",
       req->clock_time, req->obj_id, req->obj_size, req->obj_cost,
       offset_before_read);
@@ -391,7 +391,7 @@ int go_back_one_req(reader_t *const reader) {
             fseek(reader->file, -PER_SEEK_SIZE, SEEK_CUR);
 
           } else {
-            WARN("go_back_one_req cannot find the request above\n");
+            LOG(WARN, STREAM_Reader, "go_back_one_req cannot find the request above\n");
             return 1;
           }
         } else {
@@ -412,7 +412,7 @@ int go_back_one_req(reader_t *const reader) {
       }
       break;
     default:
-      ERROR("cannot recognize reader trace format: %d\n", reader->trace_format);
+      LOG(ERROR, STREAM_Reader, "cannot recognize reader trace format: %d\n", reader->trace_format);
       exit(1);
   }
   return 1;
@@ -469,7 +469,7 @@ int skip_n_req(reader_t *reader, const int N) {
   if (reader->trace_format == TXT_TRACE_FORMAT) {
     for (int i = 0; i < N; i++) {
       if (getline(buf, buf_size_ptr, reader->file) == -1) {
-        WARN("try to skip %d requests, but only %d requests left\n", N, i);
+        LOG(WARN, STREAM_Reader, "try to skip %d requests, but only %d requests left\n", N, i);
         return i;
       }
     }
@@ -479,14 +479,14 @@ int skip_n_req(reader_t *reader, const int N) {
     } else {
       count = (reader->file_size - reader->mmap_offset) / reader->item_size;
       reader->mmap_offset = reader->file_size;
-      WARN("try to skip %d requests, but only %d requests left\n", N, count);
+      LOG(WARN, STREAM_Reader, "try to skip %d requests, but only %d requests left\n", N, count);
     }
   } else {
-    ERROR("unknown trace format %d\n", reader->trace_format);
+    LOG(ERROR, STREAM_Reader, "unknown trace format %d\n", reader->trace_format);
     abort();
   }
 
-  VERBOSE("skip %d requests\n", count);
+  LOG(DEBUG, STREAM_Reader, "skip %d requests\n", count);
 
   return count;
 }
@@ -516,7 +516,7 @@ void reset_reader(reader_t *const reader) {
     curr_offset = reader->mmap_offset;
   }
 
-  DEBUG("reset reader current offset %ld\n", curr_offset);
+  LOG(DEBUG, STREAM_Reader, "reset reader current offset %ld\n", curr_offset);
 }
 
 int64_t get_num_of_req(reader_t *const reader) {
@@ -534,7 +534,7 @@ int64_t get_num_of_req(reader_t *const reader) {
     free_request(req);
     close_reader(reader_copy);
   } else {
-    ERROR("should not reach here\n");
+    LOG(ERROR, STREAM_Reader, "should not reach here\n");
     abort();
   }
   reader->n_total_req = n_req;

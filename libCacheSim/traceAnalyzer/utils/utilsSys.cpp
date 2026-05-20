@@ -7,8 +7,9 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 #ifdef __linux__
 #include <sys/sysinfo.h>

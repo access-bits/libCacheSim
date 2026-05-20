@@ -121,7 +121,7 @@ static bool LRUv0_get(cache_t *cache, const request_t *req) {
 
     while (cache->occupied_byte > cache->cache_size) LRUv0_evict(cache, req);
   } else {
-    WARN("req %lld: obj size %ld larger than cache size %ld\n",
+    LOG(WARN, STREAM_Eviction, "req %lld: obj size %ld larger than cache size %ld\n",
          (long long)req->obj_id, (long)req->obj_size, (long)cache->cache_size);
   }
   return cache_hit;

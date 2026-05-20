@@ -98,7 +98,7 @@ hashtable_t *create_chained_hashtable(const uint16_t hash_power) {
           sizeof(cache_obj_t) * hashsize(hashtable->hashpower), MADV_HUGEPAGE);
 #endif
   if (hashtable->table == NULL) {
-    ERROR("unable to allocate hash table (size %llu)\n",
+    LOG(ERROR, STREAM_Utils, "unable to allocate hash table (size %llu)\n",
           (unsigned long long)sizeof(cache_obj_t) *
               hashsize(hashtable->hashpower));
     abort();
@@ -282,7 +282,7 @@ void free_chained_hashtable(hashtable_t *hashtable) {
 
 /* grows the hashtable to the next power of 2. */
 void _chained_hashtable_expand(hashtable_t *hashtable) {
-  INFO("chained hash table expand to hash power %d\n",
+  LOG(INFO, STREAM_Utils, "chained hash table expand to hash power %d\n",
        hashtable->hashpower + 1);
 
   cache_obj_t *old_table = hashtable->table;
@@ -311,7 +311,7 @@ void _chained_hashtable_expand(hashtable_t *hashtable) {
     }
   }
   my_free(sizeof(cache_obj_t) * hashsize(hashtable->hashpower - 1), old_table);
-  VERBOSE("hashtable resized from %llu to %llu\n",
+  LOG(DEBUG, STREAM_Utils, "hashtable resized from %llu to %llu\n",
           hashsizeULL((uint16_t)(hashtable->hashpower - 1)),
           hashsizeULL(hashtable->hashpower));
 }

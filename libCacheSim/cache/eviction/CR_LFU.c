@@ -448,7 +448,7 @@ static bool CR_LFU_remove(cache_t *cache, obj_id_t obj_id) {
 static void CR_LFU_parse_params(cache_t *cache,
                                 const char *cache_specific_params) {
   if (cache_specific_params != NULL) {
-    ERROR("CR_LFU does not support cache specific parameters\n");
+    LOG(ERROR, STREAM_Eviction, "CR_LFU does not support cache specific parameters\n");
     exit(1);
   }
 }

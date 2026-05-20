@@ -1,0 +1,114 @@
+# Example YAML configuration file for cachesim
+#
+# This file demonstrates all supported configuration options.
+# Only the fields under 'trace' and 'configurations' are required.
+
+trace:
+  # Path to the trace file (required)
+  path: /path/to/trace.bin
+  
+  # Trace type: binary, csv, txt, twr, vscsi, oracleGeneralBin (required)
+  type: binary
+  
+  # Optional trace reader parameters (format depends on trace type)
+  # For CSV traces, example: "obj-id-col=1;delimiter=,;obj-size-col=3"
+  params: ""
+  
+  # Maximum number of requests to process; -1 means all requests in trace
+  num_req: -1
+  
+  # Object sampling ratio: 1.0 = no sampling, 0.01 = sample 1% of objects
+  sample_ratio: 1.0
+
+# Global settings shared across all simulations
+global:
+  # Per-simulator request queue depth for batch-and-barrier pattern
+  # 0 or negative uses default (1024)
+  queue_depth: 0
+  
+  # Whether to ignore object sizes from the trace
+  ignore_obj_size: false
+  
+  # Whether to consider per-object metadata size in the simulated cache
+  consider_obj_metadata: false
+  
+  # Whether to use TTL (time-to-live) from the trace
+  use_ttl: false
+  
+  # Verbose output during simulation
+  verbose: true
+  
+  # Print the first few requests when simulation starts
+  print_head_req: true
+
+# Output configuration
+output:
+  # Path to write simulation results
+  path: results.txt
+
+# Logging configuration (all fields optional)
+logging:
+  # Directory where log files will be created.
+  # If omitted or empty, all output falls back to stdout/stderr.
+  # The directory is created automatically if it does not exist.
+  dir: ./logs
+
+  # Minimum log level: DEBUG, INFO, WARN, ERROR  (default: INFO)
+  level: INFO
+
+  # Which streams to write per-stream files for.
+  # "ALL" creates a separate file for every stream (default).
+  # Comma-separated names to limit output: "Main,Reader,config_0_lru_100mib"
+  streams: ALL
+
+# List of cache configurations to simulate
+# Each configuration will be simulated independently and concurrently
+configurations:
+  # Simple LRU cache, 100MB, with 10% warmup
+  - policy: LRU
+    cache_size: 100MB
+    warmup_frac: 0.1
+  
+  # LRU cache with 1GB size, 60 seconds of trace time as warmup
+  - policy: LRU
+    cache_size: 1GB
+    warmup_sec: 60
+  
+  # LFU cache with parameters
+  - policy: LFU
+    cache_size: 512MB
+    warmup_frac: 0.05
+    # Optional algorithm-specific parameters
+    eviction_params: ""
+  
+  # ARC cache with admission control
+  - policy: ARC
+    cache_size: 256MB
+    warmup_frac: 0.1
+    admission: bloom-filter
+    admission_params: "prob=0.8"
+  
+  # Cache with prefetching enabled
+  - policy: LRU
+    cache_size: 500MB
+    warmup_frac: 0.15
+    prefetch: Mithril
+    prefetch_params: "block-size=65536"
+
+# Cache size format:
+#   Plain number (bytes):  12345
+#   Kilabytes:              100KB, 100KiB, 100k
+#   Megabytes:              100MB, 100MiB, 100m
+#   Gigabytes:              100GB, 100GiB, 100g
+#   Terabytes:              100TB, 100TiB, 100t
+#
+# Boolean format: true/yes/1 (anything else is false)
+#
+# Supported policies:
+#   LRU, LFU, FIFO, ARC, LeCaR, Cacheus, Clock, SFIFO, SLRU, S4LRU, etc.
+#
+# Admission algorithms:
+#   size, bloom-filter, prob
+#
+# Prefetching algorithms:
+#   Mithril, OBL, PG, AMP

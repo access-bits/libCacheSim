@@ -82,7 +82,7 @@ static void GLCache_parse_init_params(const char *cache_specific_params,
       } else if (strcasecmp(value, "oracle") == 0) {
         params->train_source_y = TRAIN_Y_FROM_ORACLE;
       } else {
-        ERROR("Unknown train-source-y %s, support online/oracle\n", value);
+        LOG(ERROR, STREAM_Eviction, "Unknown train-source-y %s, support online/oracle\n", value);
         exit(1);
       }
     } else if (strcasecmp(key, "type") == 0) {
@@ -95,7 +95,7 @@ static void GLCache_parse_init_params(const char *cache_specific_params,
       } else if (strcasecmp(value, "twoOracle") == 0) {
         params->type = LOGCACHE_TWO_ORACLE;
       } else {
-        ERROR(
+        LOG(ERROR, STREAM_Eviction, 
             "Unknown type %s, support "
             "learned/logOracle/itemOracle/twoOracle\n",
             value);
@@ -106,7 +106,7 @@ static void GLCache_parse_init_params(const char *cache_specific_params,
       printf("default params: %s\n", GLCache_default_params());
       exit(0);
     } else {
-      ERROR("GLCache does not have parameter %s\n", key);
+      LOG(ERROR, STREAM_Eviction, "GLCache does not have parameter %s\n", key);
       printf("default params: %s\n", GLCache_default_params());
       exit(1);
     }
@@ -171,7 +171,7 @@ cache_t *GLCache_init(const common_cache_params_t ccache_params,
       params->obj_score_type = OBJ_SCORE_ORACLE;
       break;
     default:
-      ERROR("Unknown type %d\n", params->type);
+      LOG(ERROR, STREAM_Eviction, "Unknown type %d\n", params->type);
       abort();
   };
 
@@ -190,7 +190,7 @@ cache_t *GLCache_init(const common_cache_params_t ccache_params,
   cache->evict = GLCache_evict;
   cache->remove = GLCache_remove;
 
-  INFO(
+  LOG(INFO, STREAM_Eviction, 
       "%s, %.0lfMB, segment_size %d, training_interval %d, source %d, "
       "rank interval %.2lf, merge consecutive segments %d, "
       "merge %d segments\n",
@@ -397,7 +397,7 @@ static cache_obj_t *GLCache_insert(cache_t *cache, const request_t *req) {
 
     seg = allocate_new_seg(cache, bucket->bucket_id);
     append_seg_to_bucket(params, bucket, seg);
-    VERBOSE("%lu allocate new seg, %d in use seg\n", cache->n_req,
+    LOG(DEBUG, STREAM_Eviction, "%lu allocate new seg, %d in use seg\n", cache->n_req,
             params->n_in_use_segs);
   }
 
@@ -445,7 +445,7 @@ static void GLCache_evict(cache_t *cache, const request_t *req) {
     static int64_t last_print_time = 0;
     if (params->curr_rtime - last_print_time > 3600 * 6) {
       last_print_time = params->curr_rtime;
-      WARN(
+      LOG(WARN, STREAM_Eviction, 
           "%.2lf hour, cache size %lld MB, %d segs, evicting and cannot "
           "merge\n",
           (double)params->curr_rtime / 3600.0,

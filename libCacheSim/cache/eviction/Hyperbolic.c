@@ -206,7 +206,7 @@ static void Hyperbolic_evict(cache_t *cache, const request_t *req) {
 
   if (obj_to_evict == NULL) {
     DEBUG_ASSERT(cache->n_obj == 0);
-    WARN("no object can be evicted\n");
+    LOG(WARN, STREAM_Eviction, "no object can be evicted\n");
   }
 
   cache_evict_base(cache, obj_to_evict, true);
@@ -272,13 +272,13 @@ static void Hyperbolic_parse_params(cache_t *cache,
     if (strcasecmp(key, "n-sample") == 0) {
       params->n_sample = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "print") == 0) {
       printf("parameters: %s\n", Hyperbolic_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s, support %s\n", cache->cache_name,
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s, support %s\n", cache->cache_name,
             key, Hyperbolic_current_params(params));
       exit(1);
     }

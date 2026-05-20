@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "internal.hpp"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/reader.h"
 
 namespace traceConv {

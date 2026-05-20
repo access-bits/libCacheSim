@@ -484,13 +484,13 @@ static void CAR_parse_params(cache_t *cache,
     if (strcasecmp(key, "p") == 0) {
       params->p = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "print") == 0) {
       printf("current parameters: %s\n", CAR_current_params(cache, params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s, example parameters %s\n",
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s, example parameters %s\n",
             cache->cache_name, key, CAR_current_params(cache, params));
       exit(1);
     }

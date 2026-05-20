@@ -180,7 +180,7 @@ static cache_obj_t *Belady_insert(cache_t *cache, const request_t *req) {
   Belady_params_t *params = cache->eviction_params;
 
   if (req->next_access_vtime == -1) {
-    ERROR("next access time is -1, please use INT64_MAX instead\n");
+    LOG(ERROR, STREAM_Eviction, "next access time is -1, please use INT64_MAX instead\n");
   }
 
   cache_obj_t *cached_obj = cache_insert_base(cache, req);

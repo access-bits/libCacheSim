@@ -25,7 +25,7 @@
 
 #include "const.h"
 #include "enum.h"
-#include "logging.h"
+#include "log.h"
 #include "request.h"
 #include "sampling.h"
 

@@ -319,18 +319,18 @@ static void Clock_parse_params(cache_t *cache,
       params->n_bit_counter = (int)strtol(value, &end, 0);
       params->max_freq = (1 << params->n_bit_counter) - 1;
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "init-freq") == 0) {
       params->init_freq = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "print") == 0) {
       printf("current parameters: %s\n", Clock_current_params(cache, params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s, example parameters %s\n",
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s, example parameters %s\n",
             cache->cache_name, key, Clock_current_params(cache, params));
       exit(1);
     }

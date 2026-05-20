@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 using namespace std;
 

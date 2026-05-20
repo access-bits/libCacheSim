@@ -18,7 +18,7 @@ extern "C" {
 #include <pthread.h>
 #include <sys/mman.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 #define N_OBJ_MEM_ARENA (1024 * 1024L)
 #define MEM_ARENA_SIZE (sizeof(cache_obj_t) * N_OBJ_MEM_ARENA)

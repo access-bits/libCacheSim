@@ -46,7 +46,7 @@ void free_bloomfilter_admissioner(admissioner_t *admissioner) {
 
 admissioner_t *create_bloomfilter_admissioner(const char *init_params) {
   if (init_params != NULL) {
-    ERROR("bloomfilter admission does not take any parameters");
+    LOG(ERROR, STREAM_Cache, "bloomfilter admission does not take any parameters");
   }
 
   admissioner_t *admissioner = (admissioner_t *)malloc(sizeof(admissioner_t));

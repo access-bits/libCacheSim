@@ -27,8 +27,8 @@ static inline void *_allocate_memory(guint64 sz) {
   if (mem_region == MAP_FAILED) {
     if (!error_reported) {
       error_reported = TRUE;
-      INFO("allocating %lu byte memory\n", MEM_ARENA_SIZE);
-      WARN("unable to use huge page");
+      LOG(INFO, STREAM_Utils, "allocating %lu byte memory\n", MEM_ARENA_SIZE);
+      LOG(WARN, STREAM_Utils, "unable to use huge page");
       perror(": ");
     }
     mem_region = mmap(NULL, sz, PROT_READ | PROT_WRITE,
@@ -38,7 +38,7 @@ static inline void *_allocate_memory(guint64 sz) {
 #else
   if (!error_reported) {
     error_reported = TRUE;
-    WARN("system does not support huge page\n");
+    LOG(WARN, STREAM_Utils, "system does not support huge page\n");
   }
   mem_region = mmap(NULL, sz, PROT_READ | PROT_WRITE,
                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -54,7 +54,7 @@ void init_all_global_mem_alloc() {
   }
   //  printf("initialized %d %p\n", global_mem_alloc_is_initialized,
   //  &global_mem_alloc_is_initialized);
-  INFO("myalloc - arena size %.2lf MB, %d allocator\n",
+  LOG(INFO, STREAM_Utils, "myalloc - arena size %.2lf MB, %d allocator\n",
        MEM_ARENA_SIZE / 1024.0 / 1024, N_MEM_ALLOCATOR);
 }
 
@@ -66,7 +66,7 @@ void free_all_global_mem_alloc() {
     free_mem_alloc(&global_mem_alloc[alloc_idx]);
   }
 
-  INFO("myalloc - %llu arena alloc %llu free_list alloc, free_list size %lu\n",
+  LOG(INFO, STREAM_Utils, "myalloc - %llu arena alloc %llu free_list alloc, free_list size %lu\n",
        n_arena_alloc, n_free_list_alloc, n_free_list_entry);
 }
 
@@ -81,7 +81,7 @@ void init_mem_alloc(mem_allocator_t *mem_alloc) {
   mem_alloc->cur_arena_idx = 0;
   mem_alloc->idx_in_cur_arena = 0;
   mem_alloc->free_list = g_queue_new();
-  VERBOSE("init mem_alloc %p - free_list %p\n", mem_alloc,
+  LOG(DEBUG, STREAM_Utils, "init mem_alloc %p - free_list %p\n", mem_alloc,
           mem_alloc->free_list);
   pthread_mutex_unlock(&mem_alloc->mtx);
 }
@@ -103,7 +103,7 @@ cache_obj_t *new_cache_obj() {
   //  printf("initialized? %d %p\n", global_mem_alloc_is_initialized,
   //  &global_mem_alloc_is_initialized);
   if (!global_mem_alloc_is_initialized) {
-    ERROR(
+    LOG(ERROR, STREAM_Utils, 
         "custom memory allocator enabled, but haven't called "
         "init_all_global_mem_alloc() to initialize allocator\n");
     abort();
@@ -148,7 +148,7 @@ slab_cache_obj_t *new_slab_cache_obj() {
   //  printf("initialized? %d %p\n", global_mem_alloc_is_initialized,
   //  &global_mem_alloc_is_initialized);
   if (!global_mem_alloc_is_initialized) {
-    ERROR(
+    LOG(ERROR, STREAM_Utils, 
         "custom memory allocator enabled, but haven't called "
         "init_all_global_mem_alloc() to initialize allocator\n");
     abort();

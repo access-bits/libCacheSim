@@ -11,7 +11,7 @@ static void dump_training_data(cache_t *cache) {
   static __thread char filename[24];
   snprintf(filename, 24, "train_data_%d", learner->n_train);
 
-  INFO("dump training data %d\n", learner->n_train);
+  LOG(INFO, STREAM_Eviction, "dump training data %d\n", learner->n_train);
 
   FILE *f = fopen(filename, "w");
   fprintf(f, "# y: x\n");

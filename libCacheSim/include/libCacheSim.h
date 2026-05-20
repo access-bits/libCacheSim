@@ -10,7 +10,7 @@
 #include "libCacheSim/cacheObj.h"
 #include "libCacheSim/const.h"
 #include "libCacheSim/enum.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/macro.h"
 #include "libCacheSim/reader.h"
 #include "libCacheSim/request.h"

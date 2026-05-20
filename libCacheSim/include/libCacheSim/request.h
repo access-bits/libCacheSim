@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "enum.h"
-#include "logging.h"
+#include "log.h"
 #include "mem.h"
 
 #ifdef __cplusplus
@@ -120,18 +120,18 @@ static inline void free_request(request_t *req) { my_free(request_t, req); }
 
 static inline void print_request(const request_t *req) {
 #ifdef SUPPORT_TTL
-  LOGGING(DEBUG_LEVEL,
-          "req clock_time %lu, id %llu, size %ld, cost %ld, ttl %ld, op %s, "
-          "valid %d\n",
-          (unsigned long)req->clock_time, (unsigned long long)req->obj_id,
-          (long)req->obj_size, (long)req->obj_cost, (long)req->ttl,
-          req_op_str[req->op], req->valid);
+  LOG(DEBUG, STREAM_Utils,
+      "req clock_time %lu, id %llu, size %ld, cost %ld, ttl %ld, op %s, "
+      "valid %d\n",
+      (unsigned long)req->clock_time, (unsigned long long)req->obj_id,
+      (long)req->obj_size, (long)req->obj_cost, (long)req->ttl,
+      req_op_str[req->op], req->valid);
 #else
-  LOGGING(DEBUG_LEVEL,
-          "req clock_time %lu, id %llu, size %ld, cost %ld, op %s, valid %d\n",
-          (unsigned long)req->clock_time, (unsigned long long)req->obj_id,
-          (long)req->obj_size, (long)req->obj_cost, req_op_str[req->op],
-          req->valid);
+  LOG(DEBUG, STREAM_Utils,
+      "req clock_time %lu, id %llu, size %ld, cost %ld, op %s, valid %d\n",
+      (unsigned long)req->clock_time, (unsigned long long)req->obj_id,
+      (long)req->obj_size, (long)req->obj_cost, req_op_str[req->op],
+      req->valid);
 #endif
 }
 

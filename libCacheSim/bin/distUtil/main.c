@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
              args.dist_type == DIST_SINCE_FIRST_ACCESS) {
     dist_array = get_access_dist(args.reader, args.dist_type, &array_size);
   } else {
-    ERROR("Unknown distance type %d\n", args.dist_type);
+    LOG(ERROR, STREAM_Main, "Unknown distance type %d\n", args.dist_type);
+    abort();
   }
 
   if (strcasecmp(args.output_type, "binary") == 0) {

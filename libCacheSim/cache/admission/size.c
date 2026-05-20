@@ -26,7 +26,7 @@ static void size_admissioner_parse_params(const char *init_params,
                                           size_admission_params_t *pa) {
   if (init_params == NULL) {
     pa->size_threshold = INT64_MAX;
-    INFO("use default size admission: %ld\n", (long)pa->size_threshold);
+    LOG(INFO, STREAM_Cache, "use default size admission: %ld\n", (long)pa->size_threshold);
   } else {
     char *params_str = strdup(init_params);
     char *old_params_str = params_str;
@@ -46,11 +46,11 @@ static void size_admissioner_parse_params(const char *init_params,
       if (strcasecmp(key, "size") == 0) {
         pa->size_threshold = strtoll(value, &end, 0);
         if (strlen(end) > 2) {
-          ERROR("param parsing error, find string \"%s\" after number\n", end);
+          LOG(ERROR, STREAM_Cache, "param parsing error, find string \"%s\" after number\n", end);
         }
-        INFO("use size threshold: %ld\n", (long)pa->size_threshold);
+        LOG(INFO, STREAM_Cache, "use size threshold: %ld\n", (long)pa->size_threshold);
       } else {
-        ERROR("size admission does not have parameter %s\n", key);
+        LOG(ERROR, STREAM_Cache, "size admission does not have parameter %s\n", key);
       }
     }
     free(old_params_str);

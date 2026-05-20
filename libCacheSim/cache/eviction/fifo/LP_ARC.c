@@ -506,7 +506,7 @@ static void LP_ARC_parse_params(cache_t *cache,
       printf("parameters: %s\n", LP_ARC_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

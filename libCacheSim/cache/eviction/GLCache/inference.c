@@ -171,7 +171,7 @@ void inference(cache_t *cache) {
   inference_xgboost(cache);
 
   uint64_t end_time = gettime_usec();
-  // INFO("inference time %.4lf sec\n", (end_time - start_time) / 1000000.0);
+  // LOG(INFO, STREAM_Eviction, "inference time %.4lf sec\n", (end_time - start_time) / 1000000.0);
 
   params->learner.n_inference += 1;
 }

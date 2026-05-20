@@ -148,18 +148,27 @@ bool cache_can_insert_default(cache_t *cache, const request_t *req) {
   if (cache->admissioner != NULL) {
     admissioner_t *admissioner = cache->admissioner;
     if (admissioner->admit(admissioner, req) == false) {
-      DEBUG_ONCE(
-          "admission algorithm does not admit: req %ld, obj %lu, size %lu\n",
-          (long)cache->n_req, (unsigned long)req->obj_id,
-          (unsigned long)req->obj_size);
+      static bool logged_admission_reject = false;
+      if (!logged_admission_reject) {
+        LOG(DEBUG, STREAM_Cache,
+            "admission algorithm does not admit: req %ld, obj %lu, size %lu\n",
+            (long)cache->n_req, (unsigned long)req->obj_id,
+            (unsigned long)req->obj_size);
+        logged_admission_reject = true;
+      }
       return false;
     }
   }
 
   if (req->obj_size + cache->obj_md_size > cache->cache_size) {
-    WARN_ONCE("%ld req, obj %lu, size %lu larger than cache size %lu\n",
-              (long)cache->n_req, (unsigned long)req->obj_id,
-              (unsigned long)req->obj_size, (unsigned long)cache->cache_size);
+    static bool logged_oversize_obj = false;
+    if (!logged_oversize_obj) {
+      LOG(WARN, STREAM_Cache,
+          "%ld req, obj %lu, size %lu larger than cache size %lu\n",
+          (long)cache->n_req, (unsigned long)req->obj_id,
+          (unsigned long)req->obj_size, (unsigned long)cache->cache_size);
+      logged_oversize_obj = true;
+    }
     return false;
   }
 
@@ -231,7 +240,7 @@ cache_obj_t *cache_find_base(cache_t *cache, const request_t *req,
 bool cache_get_base(cache_t *cache, const request_t *req) {
   cache->n_req += 1;
 
-  VERBOSE("******* %s req %ld, obj %ld, obj_size %ld, cache size %ld/%ld\n",
+  LOG(DEBUG, STREAM_Cache, "******* %s req %ld, obj %ld, obj_size %ld, cache size %ld/%ld\n",
           cache->cache_name, cache->n_req, req->obj_id, req->obj_size,
           cache->get_occupied_byte(cache), cache->cache_size);
 
@@ -243,9 +252,9 @@ bool cache_get_base(cache_t *cache, const request_t *req) {
   }
 
   if (hit) {
-    VERBOSE("req %ld, obj %ld --- cache hit\n", cache->n_req, req->obj_id);
+    LOG(DEBUG, STREAM_Cache, "req %ld, obj %ld --- cache hit\n", cache->n_req, req->obj_id);
   } else if (!cache->can_insert(cache, req)) {
-    VERBOSE("req %ld, obj %ld --- cache miss cannot insert\n", cache->n_req,
+    LOG(DEBUG, STREAM_Cache, "req %ld, obj %ld --- cache miss cannot insert\n", cache->n_req,
             req->obj_id);
   } else {
     while (cache->get_occupied_byte(cache) + req->obj_size +

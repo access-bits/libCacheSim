@@ -56,7 +56,7 @@ static void OBL_parse_init_params(const char *cache_specific_params,
     } else if (strcasecmp(key, "sequential-confidence-k") == 0) {
       init_params->sequential_confidence_k = atoi(value);
     } else {
-      ERROR("OBL does not have parameter %s\n", key);
+      LOG(ERROR, STREAM_Cache, "OBL does not have parameter %s\n", key);
       printf("default params: %s\n", OBL_default_params());
       exit(1);
     }

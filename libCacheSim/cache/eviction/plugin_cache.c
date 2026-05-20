@@ -137,7 +137,7 @@ cache_t *pluginCache_init(const common_cache_params_t ccache_params,
   // Load the plugin shared library
   void *handle = dlopen(params->plugin_path, RTLD_NOW);
   if (handle == NULL) {
-    ERROR("Failed to load plugin %s: %s\n", params->plugin_path, dlerror());
+    LOG(ERROR, STREAM_Eviction, "Failed to load plugin %s: %s\n", params->plugin_path, dlerror());
     exit(1);
   }
   params->plugin_handle = handle;
@@ -303,7 +303,7 @@ static cache_obj_t *pluginCache_insert(cache_t *cache, const request_t *req) {
  * @note This function always terminates the program with an error
  */
 static cache_obj_t *pluginCache_to_evict(cache_t *cache, const request_t *req) {
-  ERROR("pluginCache does not support to_evict function\n");
+  LOG(ERROR, STREAM_Eviction, "pluginCache does not support to_evict function\n");
   exit(1);
 }
 
@@ -329,7 +329,7 @@ static void pluginCache_evict(cache_t *cache, const request_t *req) {
   // Find the object in the cache
   cache_obj_t *obj_to_evict = hashtable_find_obj_id(cache->hashtable, obj_id);
   if (obj_to_evict == NULL) {
-    ERROR("pluginCache: object %" PRIu64 " to be evicted not found in cache\n",
+    LOG(ERROR, STREAM_Eviction, "pluginCache: object %" PRIu64 " to be evicted not found in cache\n",
           obj_id);
     exit(1);
   }
@@ -402,7 +402,7 @@ static void pluginCache_parse_params(cache_t *cache,
 
     // Check if value is NULL
     if (value == NULL) {
-      ERROR("Parameter '%s' is missing a value in cache '%s'\n", key,
+      LOG(ERROR, STREAM_Eviction, "Parameter '%s' is missing a value in cache '%s'\n", key,
             cache->cache_name);
       exit(1);
     }
@@ -415,7 +415,7 @@ static void pluginCache_parse_params(cache_t *cache,
     if (strcasecmp(key, "plugin") == 0 || strcasecmp(key, "plugin_path") == 0) {
       // Validate plugin path is not empty
       if (strlen(value) == 0) {
-        ERROR("Parameter 'plugin_path' cannot be empty in cache '%s'\n",
+        LOG(ERROR, STREAM_Eviction, "Parameter 'plugin_path' cannot be empty in cache '%s'\n",
               cache->cache_name);
         exit(1);
       }
@@ -428,7 +428,7 @@ static void pluginCache_parse_params(cache_t *cache,
       printf("current parameters: plugin_path=%s\n", params->plugin_path);
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

@@ -76,7 +76,7 @@ static void PG_parse_init_params(const char *cache_specific_params,
       printf("default params: %s\n", PG_default_params());
       exit(0);
     } else {
-      ERROR("pg does not have parameter %s\n", key);
+      LOG(ERROR, STREAM_Cache, "pg does not have parameter %s\n", key);
       printf("default params: %s\n", PG_default_params());
       exit(1);
     }
@@ -139,7 +139,7 @@ static void PG_handle_find(cache_t *cache, const request_t *req, bool hit) {
     g_hash_table_remove(PG_params->prefetched, GINT_TO_POINTER(req->obj_id));
     if (g_hash_table_contains(PG_params->prefetched,
                               GINT_TO_POINTER(req->obj_id))) {
-      fprintf(stderr, "ERROR found prefetch\n");
+      LOG(ERROR, STREAM_Cache, "ERROR found prefetch");
     }
   }
 }
@@ -327,7 +327,7 @@ static inline void _PG_add_to_graph(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
       if (pq_node->obj_id != block) {
-        ERROR("pq node content not equal block\n");
+        LOG(ERROR, STREAM_Cache, "pq node content not equal block\n");
       }
 #endif
 

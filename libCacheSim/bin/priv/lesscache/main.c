@@ -81,7 +81,7 @@ void run_cache(reader_t *reader, cache_t *cache) {
     }
 
     if (req->clock_time - last_report_ts >= 3600 * 24 && req->clock_time != 0) {
-      INFO(
+      LOG(INFO, STREAM_Main,
           "%.2lf hour: %lu requests, miss ratio %.4lf, interval miss ratio "
           "%.4lf\n",
           (double)req->clock_time / 3600, (unsigned long)req_cnt,
@@ -96,7 +96,7 @@ void run_cache(reader_t *reader, cache_t *cache) {
   }
 
   double runtime = gettime() - start_time;
-  INFO(
+  LOG(INFO, STREAM_Main,
       "%.2lf hour: %s, cache size %d, %lu "
       "requests, miss ratio %.4lf, "
       "throughput %.2lf MQPS\n",

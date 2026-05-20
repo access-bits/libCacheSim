@@ -229,7 +229,7 @@ static cache_obj_t *FIFO_Merge_insert(cache_t *cache, const request_t *req) {
  * @return the object to be evicted
  */
 static cache_obj_t *FIFO_Merge_to_evict(cache_t *cache, const request_t *req) {
-  ERROR("Undefined! Multiple objs will be evicted\n");
+  LOG(ERROR, STREAM_Eviction, "Undefined! Multiple objs will be evicted\n");
   return NULL;
 }
 
@@ -370,25 +370,25 @@ static void FIFO_Merge_parse_params(cache_t *cache,
         params->retain_policy = RETAIN_NONE;
         params->n_keep_obj = params->n_exam_obj;
       } else {
-        ERROR("unknown retain-policy %s\n", value);
+        LOG(ERROR, STREAM_Eviction, "unknown retain-policy %s\n", value);
         exit(1);
       }
     } else if (strcasecmp(key, "n-exam") == 0) {
       params->n_exam_obj = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "n-keep") == 0) {
       params->n_keep_obj = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "print") == 0) {
       printf("%s parameters: %s\n", cache->cache_name,
              FIFO_Merge_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

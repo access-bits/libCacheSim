@@ -112,7 +112,7 @@ cache_t *S3LRU_init(const common_cache_params_t ccache_params,
       (int64_t)(ccache_params.cache_size * params->ghost_size_ratio);
 
   if (LRU_cache_size <= 0 || main_cache_size <= 0) {
-    ERROR("Invalid cache size configuration: LRU=%lld bytes, main=%lld bytes\n",
+    LOG(ERROR, STREAM_Eviction, "Invalid cache size configuration: LRU=%lld bytes, main=%lld bytes\n",
           (long long)LRU_cache_size, (long long)main_cache_size);
   }
 
@@ -137,7 +137,7 @@ cache_t *S3LRU_init(const common_cache_params_t ccache_params,
   } else if (strcasecmp(params->main_cache_type, "clock2") == 0) {
     params->main_cache = Clock_init(ccache_params_local, "n-bit-counter=2");
   } else {
-    ERROR("Unknown main cache type: %s", params->main_cache_type);
+    LOG(ERROR, STREAM_Eviction, "Unknown main cache type: %s", params->main_cache_type);
     exit(1);
   }
 
@@ -291,7 +291,7 @@ static cache_obj_t *S3LRU_insert(cache_t *cache, const request_t *req) {
   } else {
     /* insert into the LRU */
     if (req->obj_size > params->LRU->cache_size) {
-      WARN("object size %ld larger than small cache size %ld\n",
+      LOG(WARN, STREAM_Eviction, "object size %ld larger than small cache size %ld\n",
            (long)req->obj_size, (long)params->LRU->cache_size);
       return NULL;
     }
@@ -376,7 +376,7 @@ static void S3LRU_evict_main(cache_t *cache, const request_t *req) {
     DEBUG_ASSERT(obj_to_evict != NULL);
     bool removed = main_cache->remove(main_cache, obj_to_evict->obj_id);
     if (!removed) {
-      ERROR("cannot remove obj %ld\n", (long)obj_to_evict->obj_id);
+      LOG(ERROR, STREAM_Eviction, "cannot remove obj %ld\n", (long)obj_to_evict->obj_id);
     }
 
     has_evicted = true;
@@ -497,7 +497,7 @@ static void S3LRU_parse_params(cache_t *cache,
       printf("parameters: %s\n", S3LRU_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

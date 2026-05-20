@@ -28,7 +28,7 @@ cache_t *create_cache_external(const char *const cache_alg_name,
 
   handle = dlopen(shared_lib_path, RTLD_LAZY);
   if (!handle) {
-    fprintf(stderr, "%s\n", dlerror());
+    LOG(ERROR, STREAM_Cache, "%s", dlerror());
     exit(EXIT_FAILURE);
   }
   dlerror(); /* Clear any existing error */
@@ -43,10 +43,10 @@ cache_t *create_cache_external(const char *const cache_alg_name,
   cache_init = dlsym_ptr.func_ptr;
 
   if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "%s\n", error);
+    LOG(ERROR, STREAM_Cache, "%s", error);
     exit(EXIT_FAILURE);
   } else {
-    INFO("external cache %s loaded\n", cache_alg_name);
+    LOG(INFO, STREAM_Cache, "external cache %s loaded", cache_alg_name);
   }
   cache_t *cache = cache_init(cc_params, cache_specific_params);
 
@@ -81,11 +81,11 @@ cache_t *create_cache_internal(const char *const cache_alg_name,
   err = dlerror();
 
   if (cache_init == NULL) {
-    WARN("cannot load internal cache %s: error %s\n", cache_alg_name, err);
+    LOG(WARN, STREAM_Cache, "cannot load internal cache %s: error %s\n", cache_alg_name, err);
     abort();
   }
 
-  INFO("internal cache %s loaded\n", cache_alg_name);
+  LOG(INFO, STREAM_Cache, "internal cache %s loaded\n", cache_alg_name);
   cache_t *cache = cache_init(cc_params, cache_specific_params);
   return cache;
 }
@@ -99,7 +99,7 @@ cache_t *create_cache_using_plugin(const char *const cache_alg_name,
     cache = create_cache_external(cache_alg_name, cc_params, specific_params);
   }
   if (cache == NULL) {
-    ERROR("failed to create cache %s\n", cache_alg_name);
+    LOG(ERROR, STREAM_Cache, "failed to create cache %s\n", cache_alg_name);
     abort();
   }
   return cache;

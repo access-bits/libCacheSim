@@ -12,7 +12,7 @@
  *
  */
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/request.h"
 #include "struct.h"
 

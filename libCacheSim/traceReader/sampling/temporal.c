@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/sampling.h"
 
 #ifdef __cplusplus
@@ -40,12 +40,12 @@ void free_temporal_sampler(sampler_t *sampler) {
 
 sampler_t *create_temporal_sampler(double sampling_ratio) {
   if (sampling_ratio > 1 || sampling_ratio <= 0) {
-    ERROR("sampling ratio range error get %lf (should be 0-1)\n",
+    LOG(ERROR, STREAM_Reader, "sampling ratio range error get %lf (should be 0-1)\n",
           sampling_ratio);
   } else if (sampling_ratio > 0.5) {
-    ERROR("currently we only support sampling ratio no more than 0.5\n");
+    LOG(ERROR, STREAM_Reader, "currently we only support sampling ratio no more than 0.5\n");
   } else if (sampling_ratio == 1) {
-    WARN("temporal sampler ratio 1 means no sampling\n");
+    LOG(WARN, STREAM_Reader, "temporal sampler ratio 1 means no sampling\n");
     return NULL;
   }
 

@@ -368,14 +368,14 @@ static void SLRUv0_parse_params(cache_t *cache,
     if (strcasecmp(key, "n-seg") == 0) {
       params->n_seg = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
 
     } else if (strcasecmp(key, "print") == 0) {
       printf("current parameters: %s\n", SLRUv0_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

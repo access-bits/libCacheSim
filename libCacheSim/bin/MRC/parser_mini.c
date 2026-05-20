@@ -318,7 +318,7 @@ void parse_mini_cmd(int argc, char *argv[], struct MINI_arguments *args) {
 
   if (args->consider_obj_metadata &&
       should_disable_obj_metadata(args->reader)) {
-    INFO("disable object metadata\n");
+    LOG(INFO, STREAM_Main, "disable object metadata\n");
     args->consider_obj_metadata = false;
   }
 
@@ -452,7 +452,7 @@ static int conv_cache_sizes(char *cache_size_str, char *rate_size_str,
                        args->cache_size_ratio[n_cache_size]);
         n_cache_size++;
       } else {
-        ERROR(
+        LOG(ERROR, STREAM_Main,
             "Number of cache size ratios should be equal to the number of "
             "cache sizes\n");
         exit(1);
@@ -467,7 +467,7 @@ static int conv_cache_sizes(char *cache_size_str, char *rate_size_str,
                                           args->cache_size_ratio[n_cache_size];
         n_cache_size++;
       } else {
-        ERROR(
+        LOG(ERROR, STREAM_Main,
             "Number of cache size ratios should be equal to the number of "
             "cache sizes\n");
         exit(1);
@@ -542,7 +542,7 @@ void print_parsed_args(struct MINI_arguments *args) {
 
   snprintf(output_str + n, OUTPUT_STR_LEN - n - 1, "\n");
 
-  INFO("%s", output_str);
+  LOG(INFO, STREAM_Main, "%s", output_str);
 
 #undef OUTPUT_STR_LEN
 }

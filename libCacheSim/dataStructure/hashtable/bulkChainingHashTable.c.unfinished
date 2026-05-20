@@ -3,7 +3,7 @@
 //
 
 #include "bulkChainHashTable.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/request.h"
 #include "libCacheSim/cacheObj.h"
 #include "hashtableStruct.h"

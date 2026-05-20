@@ -25,7 +25,7 @@
 #include "include/mysys.h"
 #include "include/mytime.h"
 #include "libCacheSim/const.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 int set_thread_affinity(pthread_t tid) {
 #ifdef __linux__
@@ -34,7 +34,7 @@ int set_thread_affinity(pthread_t tid) {
 
   last_core_id++;
   last_core_id %= num_cores;
-  DEBUG("assign thread affinity %d/%d\n", last_core_id, num_cores);
+  LOG(DEBUG, STREAM_Utils, "assign thread affinity %d/%d\n", last_core_id, num_cores);
 
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
@@ -42,7 +42,7 @@ int set_thread_affinity(pthread_t tid) {
 
   int rc = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpuset);
   if (rc != 0) {
-    WARN("Error calling pthread_setaffinity_np: %d\n", rc);
+    LOG(WARN, STREAM_Utils, "Error calling pthread_setaffinity_np: %d\n", rc);
   }
 #endif
   return 0;
@@ -51,7 +51,7 @@ int set_thread_affinity(pthread_t tid) {
 int get_n_cores(void) {
 #ifdef __linux__
 
-  // INFO(
+  // LOG(INFO, STREAM_Utils, 
   //     "This system has %d processors configured and "
   //     "%d processors available.\n",
   //     get_nprocs_conf(), get_nprocs());
@@ -60,7 +60,7 @@ int get_n_cores(void) {
 #else
   return sysconf(_SC_NPROCESSORS_ONLN);
 #endif
-  WARN("Unknown system, use 4 threads as default\n");
+  LOG(WARN, STREAM_Utils, "Unknown system, use 4 threads as default\n");
   return 4;
 }
 

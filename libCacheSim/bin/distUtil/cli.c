@@ -165,7 +165,8 @@ void parse_cmd(int argc, char *argv[], struct arguments *args) {
   } else if (strcasecmp(dist_type_str, "dist_since_first_access") == 0) {
     args->dist_type = DIST_SINCE_FIRST_ACCESS;
   } else {
-    ERROR("unsupported dist type %s\n", dist_type_str);
+    LOG(ERROR, STREAM_Main, "unsupported dist type %s\n", dist_type_str);
+    abort();
   }
 
   // reader_init_param_t reader_init_params;

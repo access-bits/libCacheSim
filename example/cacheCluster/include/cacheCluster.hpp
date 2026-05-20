@@ -17,7 +17,7 @@
 #include "consistentHash.h"
 // #include "hasher.hpp"
 #include "libCacheSim/cache.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/reader.h"
 
 namespace CDNSimulator {

@@ -103,7 +103,7 @@ static void Mithril_parse_init_params(const char *cache_specific_params,
       } else if (strcasecmp(value, "each_req") == 0) {
         init_params->rec_trigger = each_req;
       } else {
-        ERROR("Mithril's rec-trigger does not support %s \n", value);
+        LOG(ERROR, STREAM_Cache, "Mithril's rec-trigger does not support %s \n", value);
       }
     } else if (strcasecmp(key, "block-size") == 0) {
       init_params->block_size = (unsigned long)atoi(value);
@@ -124,7 +124,7 @@ static void Mithril_parse_init_params(const char *cache_specific_params,
       printf("default params: %s\n", Mithril_default_params());
       exit(0);
     } else {
-      ERROR("Mithril does not have parameter %s\n", key);
+      LOG(ERROR, STREAM_Cache, "Mithril does not have parameter %s\n", key);
       printf("default params: %s\n", Mithril_default_params());
       exit(1);
     }
@@ -535,7 +535,7 @@ static inline void _Mithril_rec_min_support_one(cache_t *cache,
     int old_pos = GPOINTER_TO_INT(
         g_hash_table_lookup(rmtable->hashtable, GINT_TO_POINTER(b)));
     if (old_pos != 0) {
-      ERROR("ts %lu, checking %ld, %ld is found at pos %d\n",
+      LOG(ERROR, STREAM_Cache, "ts %lu, checking %ld, %ld is found at pos %d\n",
             (unsigned long)Mithril_params->ts, (long)TRACK_BLOCK,
             (long)*(gint64 *)GET_ROW_IN_MTABLE(Mithril_params, old_pos - 1),
             old_pos);
@@ -570,7 +570,7 @@ static inline void _Mithril_rec_min_support_one(cache_t *cache,
     gint64 *row_in_mtable =
         GET_ROW_IN_MTABLE(Mithril_params, rmtable->mining_table->len - 1);
     if (req->obj_id != (obj_id_t)row_in_mtable[0]) {
-      ERROR("after inserting, hashtable mining not consistent %ld %ld\n",
+      LOG(ERROR, STREAM_Cache, "after inserting, hashtable mining not consistent %ld %ld\n",
             (long)req->obj_id, (long)row_in_mtable[0]);
       abort();
     }
@@ -581,7 +581,7 @@ static inline void _Mithril_rec_min_support_one(cache_t *cache,
 
 #ifdef SANITY_CHECK
     if (req->obj_id != (obj_id_t)row_in_mtable[0]) {
-      ERROR("ts %lu, hashtable mining found position not correct %ld %ld\n",
+      LOG(ERROR, STREAM_Cache, "ts %lu, hashtable mining found position not correct %ld %ld\n",
             (unsigned long)Mithril_params->ts, (long)req->obj_id,
             (long)row_in_mtable[0]);
       abort();
@@ -601,7 +601,7 @@ static inline void _Mithril_rec_min_support_one(cache_t *cache,
       /* no timestamp added, drop this request, it is too frequent */
       if (!g_hash_table_remove(rmtable->hashtable,
                                GINT_TO_POINTER(row_in_mtable[0]))) {
-        ERROR("removing from rmtable failed for mining table entry\n");
+        LOG(ERROR, STREAM_Cache, "removing from rmtable failed for mining table entry\n");
       }
 
       g_array_remove_index_fast(rmtable->mining_table, index - 1);
@@ -649,7 +649,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
       if (row_in_rtable[0] != 0) {
-        ERROR("recording table is not clean\n");
+        LOG(ERROR, STREAM_Cache, "recording table is not clean\n");
         abort();
       }
 #endif
@@ -680,7 +680,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
          **/
         if (!g_hash_table_contains(rmtable->hashtable,
                                    GINT_TO_POINTER(row_in_rtable[0]))) {
-          ERROR(
+          LOG(ERROR, STREAM_Cache, 
               "remove old entry from recording table, "
               "but it is not in recording hashtable, "
               "block %ld, recording table pos %ld, ts %ld ",
@@ -688,8 +688,8 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
               (long)Mithril_params->ts);
 
           long temp = rmtable->rtable_cur_row - 1;
-          fprintf(stderr, "previous line block %ld\n",
-                  *(long *)(GET_ROW_IN_RTABLE(Mithril_params, temp)));
+          LOG(DEBUG, STREAM_Cache, "previous line block %ld",
+              *(long *)(GET_ROW_IN_RTABLE(Mithril_params, temp)));
           abort();
         }
 
@@ -716,7 +716,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
         if (req->obj_id != (obj_id_t)row_in_mtable[0]) {
-          ERROR(
+          LOG(ERROR, STREAM_Cache, 
               "inconsistent entry in mtable "
               "and mining hashtable current request %ld, "
               "mining table %ld\n",
@@ -737,7 +737,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
           /* no timestamp added, drop this request, it is too frequent */
           if (!g_hash_table_remove(rmtable->hashtable,
                                    GINT_TO_POINTER(row_in_mtable[0]))) {
-            ERROR("removing from rmtable failed for mining table entry\n");
+            LOG(ERROR, STREAM_Cache, "removing from rmtable failed for mining table entry\n");
           }
 
           /** for dataType c, now the pointer to string has been freed,
@@ -767,7 +767,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
         if (req->obj_id != (obj_id_t)row_in_rtable[0]) {
-          ERROR("Hashtable recording found position not correct %ld %ld\n",
+          LOG(ERROR, STREAM_Cache, "Hashtable recording found position not correct %ld %ld\n",
                 (long)req->obj_id, (long)row_in_rtable[0]);
           abort();
         }
@@ -800,7 +800,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
           if ((long)rmtable->mining_table->len >= Mithril_params->mtable_size) {
             /* if this happens, array will re-malloc, which will make
              * the hashtable key not reliable when obj_id_type is l */
-            ERROR(
+            LOG(ERROR, STREAM_Cache, 
                 "mining table length reaches limit, but no mining, "
                 "entry %d, size %u, threshold %d\n",
                 rmtable->n_avail_mining, rmtable->mining_table->len,
@@ -819,7 +819,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
             if (row_in_rtable == cur_row_in_rtable)
-              ERROR("FOUND SRC DEST same\n");
+              LOG(ERROR, STREAM_Cache, "FOUND SRC DEST same\n");
 #endif
             memcpy(row_in_rtable, cur_row_in_rtable,
                    sizeof(TS_REPRESENTATION) * rmtable->rtable_row_len);
@@ -840,7 +840,7 @@ static inline void _Mithril_record_entry(cache_t *cache, const request_t *req) {
 
 #ifdef SANITY_CHECK
           if (inserted_row_in_mtable[0] != (gint64)req->obj_id) {
-            ERROR("current block %ld, moving mining row block %ld\n",
+            LOG(ERROR, STREAM_Cache, "current block %ld, moving mining row block %ld\n",
                   (long)req->obj_id, (long)inserted_row_in_mtable[0]);
             abort();
           }
@@ -1054,9 +1054,10 @@ static void _Mithril_add_to_prefetch_table(cache_t *cache, gpointer gp1,
       // assumes a 64 bit platform
 #ifdef SANITY_CHECK
       if (Mithril_params->ptable_array[dim1][dim2] != GPOINTER_TO_INT(gp1)) {
-        fprintf(stderr, "ERROR prefetch table pos wrong %d %ld, dim %d %d\n",
-                GPOINTER_TO_INT(gp1),
-                (long)Mithril_params->ptable_array[dim1][dim2], dim1, dim2);
+        LOG(ERROR, STREAM_Cache,
+            "ERROR prefetch table pos wrong %d %ld, dim %d %d",
+            GPOINTER_TO_INT(gp1),
+            (long)Mithril_params->ptable_array[dim1][dim2], dim1, dim2);
         exit(1);
       }
 #endif

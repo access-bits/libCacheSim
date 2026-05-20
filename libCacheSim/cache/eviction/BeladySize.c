@@ -233,7 +233,7 @@ static cache_obj_t *BeladySize_to_evict(cache_t *cache, const request_t *req) {
     }
   }
   if (obj_to_evict == NULL) {
-    WARN(
+    LOG(WARN, STREAM_Eviction, 
         "BeladySize_to_evict: obj_to_evict is NULL, "
         "maybe cache size is too small or hash power too large, "
         "current hash table size %llu, n_obj %llu, cache size %lld, request "
@@ -316,13 +316,13 @@ static void BeladySize_parse_params(cache_t *cache,
     if (strcasecmp(key, "n-sample") == 0) {
       params->n_sample = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "print") == 0) {
       printf("current parameters: %s\n", BeladySize_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s, support %s\n", cache->cache_name,
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s, support %s\n", cache->cache_name,
             key, BeladySize_current_params(params));
       exit(1);
     }

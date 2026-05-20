@@ -8,7 +8,7 @@
 #include <cstring>
 #include <string>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 namespace utils {
 void *setup_mmap(const std::string &file_path, size_t *size) {

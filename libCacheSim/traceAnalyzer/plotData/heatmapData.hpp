@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "logging.h"
+#include "log.h"
 
 namespace analysis {
 

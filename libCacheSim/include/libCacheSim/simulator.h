@@ -9,110 +9,34 @@
 #define simulator_h
 
 #include "cache.h"
+#include "log.h"
 #include "reader.h"
+#include "sim_config.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
+ * @brief Simulate a list of configurations reading the trace exactly once.
  *
- * this function performs num_of_sizes simulations each at one cache size,
- * it returns an array of cache_stat_t*, each element is the result of one
- * simulation the returned cache_stat_t should be freed by the user
+ * Thread pool size equals n_configs — every configuration runs concurrently.
+ * Caches must be pre-created by the caller with admission/prefetch attached.
+ * The function frees each cache after its worker finishes.
  *
- * this also supports warmup using
- *      a different trace by setting warmup_reader pointing to the trace
- *              or
- *      fraction of the requests from the reader
- *              or
- *      warmup_sec of requests from the reader
- *
- * @param reader
- * @param cache
- * @param num_of_sizes
- * @param cache_sizes
- * @param warmup_reader
- * @param warmup_frac
- * @param num_of_threads
- * @return
+ * @param reader         trace reader (consumed once on the calling thread)
+ * @param global_cfg     global settings: queue_depth, etc.
+ * @param configs        per-config settings: warmup_sec, warmup_frac, etc.
+ * @param caches         pre-created cache_t* array of length n_configs
+ * @param n_configs      number of configurations
+ * @param config_streams per-worker log stream IDs (length n_configs); may be
+ *                       NULL to skip per-worker log routing
+ * @return heap-allocated cache_stat_t[n_configs]; caller must free
  */
-cache_stat_t *simulate_at_multi_sizes(reader_t *reader, const cache_t *cache,
-                                      int num_of_sizes,
-                                      const uint64_t *cache_sizes,
-                                      reader_t *warmup_reader,
-                                      double warmup_frac, int warmup_sec,
-                                      int num_of_threads, bool use_random_seed);
-
-/**
- * this function performs cache_size/step_size simulations to obtain miss ratio,
- * the size of simulations are step_size, step_size*2 ... step_size*n,
- * it returns an array of cache_stat_t*, each element of the array is the
- * result of one simulation
- * the returned cache_stat_t should be freed by the user
- *
- *  this also supports warmup using
- *   a different trace by setting warmup_reader pointing to the trace
- *           or
- *   fraction of the requests in the given trace reader by setting warmup_frac
- *
- * @param reader_in
- * @param cache_in
- * @param step_size
- * @param warmup_frac
- * @param num_of_threads
- * @return an array of cache_stat_t, each corresponds to one simulation
- */
-
-cache_stat_t *simulate_at_multi_sizes_with_step_size(
-    reader_t *reader_in, const cache_t *cache_in, uint64_t step_size,
-    reader_t *warmup_reader, double warmup_frac, int warmup_sec,
-    int num_of_threads, bool use_random_seed);
-
-/**
- * this function performs num_of_caches simulations with the caches,
- * it returns a cache_stat_t
- * the returned cache_stat_t should be freed by the user
- * *
- * @param reader
- * @param caches
- * @param num_of_caches
- * @param warmup_reader
- * @param warmup_frac
- * @param num_of_threads
- * @return
- */
-cache_stat_t *simulate_with_multi_caches(
-    reader_t *reader, cache_t *caches[], int num_of_caches,
-    reader_t *warmup_reader, double warmup_frac, int warmup_sec,
-    int num_of_threads, bool free_cache_when_finish, bool use_random_seed);
-
-/**
- * @brief Simulate multiple caches reading the trace exactly once.
- *
- * A single reader thread fans each request into N per-simulator bounded
- * queues.  Workers process their queue in parallel.  The reader blocks when
- * any queue is full (backpressure), bounding memory to
- * O(num_of_caches * queue_depth * sizeof(request_t)).
- *
- * @param queue_depth  per-simulator queue capacity (<=0 uses default 1024)
- */
-cache_stat_t *simulate_with_single_reader(
-    reader_t *reader, cache_t *caches[], int num_of_caches,
-    reader_t *warmup_reader, double warmup_frac, int warmup_sec,
-    int num_of_threads, int queue_depth, bool free_cache_when_finish,
-    bool use_random_seed);
-
-/**
- * @brief MRC sweep equivalent to simulate_at_multi_sizes but reads the trace
- *        exactly once using the single-reader architecture.
- *
- * @param queue_depth  per-simulator queue capacity (<=0 uses default 1024)
- */
-cache_stat_t *simulate_at_multi_sizes_single_reader(
-    reader_t *reader, const cache_t *cache, int num_of_sizes,
-    const uint64_t *cache_sizes, reader_t *warmup_reader, double warmup_frac,
-    int warmup_sec, int num_of_threads, int queue_depth, bool use_random_seed);
+cache_stat_t *simulate_with_config_list(
+    reader_t *reader, sim_global_config_t *global_cfg,
+    sim_config_t *configs, cache_t **caches, int n_configs,
+    const stream_id_t *config_streams);
 
 #ifdef __cplusplus
 }

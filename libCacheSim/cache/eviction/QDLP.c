@@ -106,7 +106,7 @@ cache_t *QDLP_init(const common_cache_params_t ccache_params,
       (int64_t)(ccache_params.cache_size * params->ghost_size_ratio);
 
   if (fifo_cache_size <= 0 || main_cache_size <= 0) {
-    ERROR(
+    LOG(ERROR, STREAM_Eviction, 
         "Invalid cache size configuration: fifo=%lld bytes, main=%lld bytes\n",
         (long long)fifo_cache_size, (long long)main_cache_size);
   }
@@ -154,7 +154,7 @@ cache_t *QDLP_init(const common_cache_params_t ccache_params,
   } else if (strcasecmp(params->main_cache_type, "Hyperbolic") == 0) {
     params->main_cache = Hyperbolic_init(ccache_params_local, NULL);
   } else {
-    ERROR("QDLP does not support %s \n", params->main_cache_type);
+    LOG(ERROR, STREAM_Eviction, "QDLP does not support %s \n", params->main_cache_type);
   }
 
 #if defined(TRACK_EVICTION_V_AGE)
@@ -472,7 +472,7 @@ static void QDLP_parse_params(cache_t *cache,
       printf("parameters: %s\n", QDLP_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

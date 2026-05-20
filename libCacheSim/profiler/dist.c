@@ -52,7 +52,7 @@ int64_t get_access_dist_add_req(const request_t *req, GHashTable *hash_table,
   } else if (dist_type == DIST_SINCE_FIRST_ACCESS) {
     /* do nothing */
   } else {
-    ERROR("dist_type %d not supported in access_dist\n", dist_type);
+    LOG(ERROR, STREAM_Profiler, "dist_type %d not supported in access_dist\n", dist_type);
   }
   return ret;
 }
@@ -135,7 +135,7 @@ int32_t *get_stack_dist(reader_t *reader, const dist_type_e dist_type,
     stack_dist = get_stack_dist_add_req(req, &splay_tree, hash_table, curr_ts,
                                         &last_access_ts);
     if (stack_dist > (int64_t)UINT32_MAX) {
-      ERROR("stack distance %ld is larger than UINT32_MAX\n", (long)stack_dist);
+      LOG(ERROR, STREAM_Profiler, "stack distance %ld is larger than UINT32_MAX\n", (long)stack_dist);
       abort();
     }
     if (dist_type == STACK_DIST) {
@@ -145,7 +145,7 @@ int32_t *get_stack_dist(reader_t *reader, const dist_type_e dist_type,
         stack_dist_array[last_access_ts] = stack_dist;
       }
     } else {
-      ERROR("dist_type %d is not supported in stack distance calculation\n",
+      LOG(ERROR, STREAM_Profiler, "dist_type %d is not supported in stack distance calculation\n",
             dist_type);
     }
     read_one_req(reader, req);
@@ -176,7 +176,7 @@ int32_t *get_access_dist(reader_t *reader, const dist_type_e dist_type,
   while (req->valid) {
     dist = get_access_dist_add_req(req, hash_table, curr_ts, dist_type);
     if (dist > (int64_t)UINT32_MAX) {
-      ERROR("access distance %ld is larger than UINT32_MAX\n", (long)dist);
+      LOG(ERROR, STREAM_Profiler, "access distance %ld is larger than UINT32_MAX\n", (long)dist);
       abort();
     }
 

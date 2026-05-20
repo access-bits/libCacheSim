@@ -6,7 +6,7 @@
 
 #include <inttypes.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 __thread uint64_t rand_seed = 0;
 __thread __uint128_t g_lehmer64_state = 0xdeadbeef;

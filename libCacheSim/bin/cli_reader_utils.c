@@ -23,10 +23,11 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
   if (strcasecmp(trace_type_str, "auto") == 0) {
     trace_type_e trace_type = detect_trace_type(trace_path);
     if (trace_type == UNKNOWN_TRACE) {
-      ERROR(
+      LOG(ERROR, STREAM_Reader,
           "cannot detect trace type from trace path %s, "
           "please specify the trace type manually\n",
           trace_path);
+      abort();
     }
     return trace_type;
   } else if (strcasecmp(trace_type_str, "txt") == 0) {
@@ -52,7 +53,8 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
   } else if (strcasecmp(trace_type_str, "valpinTrace") == 0) {
     return VALPIN_TRACE;
   } else {
-    ERROR("unsupported trace type: %s\n", trace_type_str);
+    LOG(ERROR, STREAM_Reader, "unsupported trace type: %s\n", trace_type_str);
+    abort();
   }
   return UNKNOWN_TRACE;
 }
@@ -65,17 +67,19 @@ bool is_true(const char *arg) {
              strcasecmp(arg, "no") == 0 || strcasecmp(arg, "n") == 0) {
     return false;
   } else {
-    ERROR("Invalid value: %s, expect true/false", arg);
+    LOG(ERROR, STREAM_Reader, "Invalid value: %s, expect true/false", arg);
     abort();
   }
 }
 
 static void _check_parsed_result(char *end, int col_idx) {
   if (strlen(end) > 2) {
-    ERROR("param parsing error, find string \"%s\" after number\n", end);
+    LOG(ERROR, STREAM_Reader, "param parsing error, find string \"%s\" after number\n", end);
+    abort();
   }
   if (col_idx < 1) {
-    ERROR("field/col index should start from 1\n");
+    LOG(ERROR, STREAM_Reader, "field/col index should start from 1\n");
+    abort();
   }
 }
 
@@ -171,17 +175,19 @@ void parse_reader_params(const char *reader_params_str,
             /* user input: k1=v1, delimiter=\t, k2=v2*/
             params->delimiter = '\t';
           } else if (value[1] == ',') {
-            WARN("delimiter may be incorrect\n");
+            LOG(WARN, STREAM_Reader, "delimiter may be incorrect\n");
             params->delimiter = ',';
           } else {
-            ERROR("unsupported delimiter: '%s'\n", value);
+            LOG(ERROR, STREAM_Reader, "unsupported delimiter: '%s'\n", value);
+            abort();
           }
         } else {
-          ERROR("unsupported delimiter: '%s'\n", value);
+          LOG(ERROR, STREAM_Reader, "unsupported delimiter: '%s'\n", value);
+          abort();
         }
       }
     } else {
-      ERROR("cache does not support trace parameter %s\n", key);
+      LOG(ERROR, STREAM_Reader, "cache does not support trace parameter %s\n", key);
       exit(1);
     }
   }
@@ -214,7 +220,7 @@ trace_type_e detect_trace_type(const char *trace_path) {
     trace_type = UNKNOWN_TRACE;
   }
 
-  INFO("detecting trace type: %s\n", g_trace_type_name[trace_type]);
+  LOG(INFO, STREAM_Reader, "detecting trace type: %s\n", g_trace_type_name[trace_type]);
   return trace_type;
 }
 
@@ -259,11 +265,11 @@ void cal_working_set_size(reader_t *reader, int64_t *wss_obj,
   }
 
   int64_t n_req = 0;
-  INFO("calculating working set size...\n");
+  LOG(INFO, STREAM_Reader, "calculating working set size...\n");
   while (read_one_req(reader, req) == 0) {
     n_req += 1;
     if (n_req % 2000000 == 0) {
-      DEBUG("processed %ld requests, %lld objects, %lld bytes\n", (long)n_req,
+      LOG(DEBUG, STREAM_Reader, "processed %ld requests, %lld objects, %lld bytes\n", (long)n_req,
             (long long)*wss_obj, (long long)*wss_byte);
     }
     if (scaling_factor > 1 && req->obj_id % scaling_factor != 0) {
@@ -283,12 +289,12 @@ void cal_working_set_size(reader_t *reader, int64_t *wss_obj,
   *wss_byte *= scaling_factor;
 
   if (scaling_factor > 1) {
-    INFO(
+    LOG(INFO, STREAM_Reader,
         "estimated working set size (%.2f sample ratio): %lld object %lld "
         "byte\n",
         1.0 / scaling_factor, (long long)*wss_obj, (long long)*wss_byte);
   } else {
-    INFO("working set size: %lld object %lld byte\n", (long long)*wss_obj,
+    LOG(INFO, STREAM_Reader, "working set size: %lld object %lld byte\n", (long long)*wss_obj,
          (long long)*wss_byte);
   }
 

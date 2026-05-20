@@ -14,6 +14,7 @@
 #include "../dataStructure/minvaluemap.hpp"
 #include "../dataStructure/splaytree.hpp"
 #include "libCacheSim/const.h"
+#include "libCacheSim/simulator.h"
 
 mrcProfiler::MRCProfilerBase *mrcProfiler::create_mrc_profiler(
     mrc_profiler_e type, reader_t *reader, std::string output_path,
@@ -297,8 +298,10 @@ void mrcProfiler::MRCProfilerMINISIM::run() {
   reader_->init_params.sampler = sampler;
   reader_->sampler = sampler;
 
-  // 3. run the simulate_with_multi_caches
+  // 3. run the simulate_with_config_list
   cache_t *caches[MAX_MRC_PROFILE_POINTS];
+  sim_config_t configs[MAX_MRC_PROFILE_POINTS];
+  
   for (size_t i = 0; i < params_.profile_size.size(); i++) {
     size_t _cache_size = mrc_size_vec[i] * sample_rate;
     common_cache_params_t cc_params = {.cache_size = _cache_size,
@@ -307,10 +310,25 @@ void mrcProfiler::MRCProfilerMINISIM::run() {
                                        .consider_obj_metadata = false};
     caches[i] = create_cache_using_plugin(params_.cache_algorithm_str,
                                           cc_params, nullptr);
+    
+    /* Create minimal config for this cache */
+    memset(&configs[i], 0, sizeof(sim_config_t));
+    snprintf(configs[i].policy, sizeof(configs[i].policy), "%s", 
+             params_.cache_algorithm_str);
+    configs[i].cache_size = _cache_size;
+    configs[i].warmup_sec = 0;
+    configs[i].warmup_frac = 0.0;
   }
-  result = simulate_with_multi_caches(
-      reader_, caches, mrc_size_vec.size(), NULL, 0, 0,
-      params_.minisim_params.thread_num, true, true);
+  
+  /* Set up global config */
+  sim_global_config_t global_cfg;
+  memset(&global_cfg, 0, sizeof(global_cfg));
+  global_cfg.num_req = -1;
+  global_cfg.queue_depth = params_.minisim_params.thread_num;
+  
+  result = simulate_with_config_list(
+      reader_, &global_cfg, configs, caches, 
+      (int)mrc_size_vec.size(), NULL);
 
   // 4. adjust hit cnt and hit size
   for (size_t i = 0; i < mrc_size_vec.size(); i++) {

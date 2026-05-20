@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <zstd.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 #define LINE_DELIM '\n'
 
@@ -40,7 +40,7 @@ zstd_reader_t *create_zstd_reader(const char *trace_path) {
 
   reader->zds = ZSTD_createDStream();
 
-  DEBUG("create zstd reader %s\n", trace_path);
+  LOG(DEBUG, STREAM_Reader, "create zstd reader %s\n", trace_path);
   return reader;
 }
 
@@ -49,7 +49,7 @@ void free_zstd_reader(zstd_reader_t *reader) {
   free(reader->buff_in);
   free(reader->buff_out);
   free(reader);
-  DEBUG("free zstd reader\n");
+  LOG(DEBUG, STREAM_Reader, "free zstd reader\n");
 }
 
 void reset_zstd_reader(zstd_reader_t *reader) {
@@ -77,7 +77,7 @@ size_t _read_from_file(zstd_reader_t *reader) {
       return 0;
     }
   }
-  //  DEBUG("read %zu bytes from file\n", read_sz);
+  //  LOG(DEBUG, STREAM_Reader, "read %zu bytes from file\n", read_sz);
 
   reader->input.size = read_sz;
   reader->input.pos = 0;
@@ -99,7 +99,7 @@ rstatus _decompress_from_buff(zstd_reader_t *reader) {
       if (reader->status == MY_EOF) {
         return MY_EOF;
       } else {
-        ERROR("read from file error\n");
+        LOG(ERROR, STREAM_Reader, "read from file error\n");
         return ERR;
       }
     }
@@ -110,7 +110,7 @@ rstatus _decompress_from_buff(zstd_reader_t *reader) {
   if (ret != 0) {
     if (ZSTD_isError(ret)) {
       printf("%zu\n", ret);
-      WARN("zstd decompression error: %s\n", ZSTD_getErrorName(ret));
+      LOG(WARN, STREAM_Reader, "zstd decompression error: %s\n", ZSTD_getErrorName(ret));
     }
   }
 
@@ -190,7 +190,7 @@ size_t zstd_reader_read_bytes(zstd_reader_t *reader, size_t n_byte,
 
     if (status != OK) {
       if (status != MY_EOF) {
-        ERROR("error decompress file\n");
+        LOG(ERROR, STREAM_Reader, "error decompress file\n");
       } else {
         /* end of file */
         return 0;
@@ -206,7 +206,7 @@ size_t zstd_reader_read_bytes(zstd_reader_t *reader, size_t n_byte,
 
     return sz;
   } else {
-    ERROR("do not have enough bytes %zu < %zu\n",
+    LOG(ERROR, STREAM_Reader, "do not have enough bytes %zu < %zu\n",
           reader->output.pos - reader->buff_out_read_pos, n_byte);
 
     return sz;

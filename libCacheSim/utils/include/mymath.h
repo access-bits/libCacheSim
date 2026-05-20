@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 #ifdef __cplusplus
 extern "C" {

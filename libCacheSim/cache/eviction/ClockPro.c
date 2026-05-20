@@ -516,7 +516,7 @@ static void ClockPro_parse_params(cache_t *cache,
              ClockPro_current_params(cache, params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
     }
   }
   free(old_params_str);

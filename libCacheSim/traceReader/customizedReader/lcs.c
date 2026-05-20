@@ -14,20 +14,20 @@ extern "C" {
 static bool _verify_lcs_header(lcs_trace_header_t *header) {
   /* check whether the trace is valid */
   if (header->start_magic != LCS_TRACE_START_MAGIC) {
-    ERROR("invalid trace file, start magic is wrong 0x%lx\n",
+    LOG(ERROR, STREAM_Reader, "invalid trace file, start magic is wrong 0x%lx\n",
           (unsigned long)header->start_magic);
     return false;
   }
 
   if (header->end_magic != LCS_TRACE_END_MAGIC) {
-    ERROR("invalid trace file, end magic is wrong 0x%lx\n",
+    LOG(ERROR, STREAM_Reader, "invalid trace file, end magic is wrong 0x%lx\n",
           (unsigned long)header->end_magic);
     return false;
   }
 
   lcs_trace_stat_t *stat = &(header->stat);
   if (stat->n_req < 0 || stat->n_obj < 0) {
-    ERROR("invalid trace file, n_req %ld, n_obj %ld\n",
+    LOG(ERROR, STREAM_Reader, "invalid trace file, n_req %ld, n_obj %ld\n",
           (unsigned long)stat->n_req, (unsigned long)stat->n_obj);
     return false;
   }
@@ -141,11 +141,11 @@ int lcsReader_setup(reader_t *reader) {
     reader->item_size = sizeof(lcs_req_v8_t);
     assert(LCS_VER_TO_N_FEATURES[8] == 16);
   } else {
-    ERROR("invalid lcs version %ld\n", (unsigned long)reader->lcs_ver);
+    LOG(ERROR, STREAM_Reader, "invalid lcs version %ld\n", (unsigned long)reader->lcs_ver);
     exit(1);
   }
 
-  DEBUG("setup lcs reader %s, version %ld, item size %ld\n", reader->trace_path,
+  LOG(DEBUG, STREAM_Reader, "setup lcs reader %s, version %ld, item size %ld\n", reader->trace_path,
         (unsigned long)reader->lcs_ver, (unsigned long)reader->item_size);
   return 0;
 }
@@ -200,7 +200,7 @@ int lcs_read_one_req(reader_t *reader, request_t *req) {
       req->features[i] = features[i];
     }
   } else {
-    ERROR("invalid lcs version %ld\n", (unsigned long)reader->lcs_ver);
+    LOG(ERROR, STREAM_Reader, "invalid lcs version %ld\n", (unsigned long)reader->lcs_ver);
     return 1;
   }
 

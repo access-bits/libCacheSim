@@ -56,7 +56,7 @@ static int read_first_line(const reader_t *reader, char *in_buf,
   size_t read_size = getline(&buf, &n, ifile);
 
   if (in_buf_size < read_size) {
-    WARN(
+    LOG(WARN, STREAM_Reader, 
         "in_buf_size %zu is smaller than the first line size %zu, "
         "the first line will be truncated",
         in_buf_size, read_size);
@@ -104,7 +104,7 @@ static char csv_detect_delimiter(const reader_t *reader) {
   assert(delimiter != 0);
   static bool has_printed = false;
   if (!has_printed) {
-    INFO("detect csv delimiter %c\n", delimiter);
+    LOG(INFO, STREAM_Reader, "detect csv delimiter %c\n", delimiter);
     has_printed = true;
   }
 
@@ -152,7 +152,7 @@ static bool csv_detect_header(const reader_t *reader) {
 
   static bool has_printed = false;
   if (!has_printed) {
-    INFO("detect csv trace has header %d\n", has_header);
+    LOG(INFO, STREAM_Reader, "detect csv trace has header %d\n", has_header);
     has_printed = true;
   }
 
@@ -206,7 +206,7 @@ static inline void csv_cb1(void *s, size_t len, void *data) {
     if (reader->obj_id_is_num) {
       req->obj_id = strtoull((char *)s, &end, 0);
       if (req->obj_id == 0 && s == end) {
-        WARN("object id is not numeric: \"%s\"\n", (char *)s);
+        LOG(WARN, STREAM_Reader, "object id is not numeric: \"%s\"\n", (char *)s);
       }
     } else {
       if (!reader->obj_id_is_num_set) {
@@ -219,7 +219,7 @@ static inline void csv_cb1(void *s, size_t len, void *data) {
             csv_params->n_obj_id_is_num + csv_params->n_obj_id_is_not_num;
         if (n_req > 20000) {
           if (csv_params->n_obj_id_is_num > (double)n_req * 0.99) {
-            ERROR(
+            LOG(ERROR, STREAM_Reader, 
                 "detect obj_id is numeric, please specify -t "
                 "'obj-id-is-num=1'\n");
           }
@@ -235,12 +235,12 @@ static inline void csv_cb1(void *s, size_t len, void *data) {
   } else if (csv_params->curr_field_idx == csv_params->obj_size_field_idx) {
     req->obj_size = (int64_t)strtoll((char *)s, &end, 0);
     if (req->obj_size == 0 && end == s) {
-      WARN("csvReader obj_size is not a number: \"%s\"\n", (char *)s);
+      LOG(WARN, STREAM_Reader, "csvReader obj_size is not a number: \"%s\"\n", (char *)s);
     }
   } else if (csv_params->curr_field_idx == csv_params->obj_cost_field_idx) {
     req->obj_cost = (int64_t)strtoll((char *)s, &end, 0);
     if (req->obj_cost == 0 && end == s) {
-      WARN("csvReader obj_cost is not a number: \"%s\"\n", (char *)s);
+      LOG(WARN, STREAM_Reader, "csvReader obj_cost is not a number: \"%s\"\n", (char *)s);
     }
   } else if (csv_params->curr_field_idx == csv_params->op_field_idx) {
     if (strncasecmp((char *)s, "read", len) == 0) {
@@ -254,7 +254,7 @@ static inline void csv_cb1(void *s, size_t len, void *data) {
     } else if (strncasecmp((char *)s, "delete", len) == 0) {
       req->op = OP_DELETE;
     } else {
-      WARN("unknown operation: \"%s\"\n", (char *)s);
+      LOG(WARN, STREAM_Reader, "unknown operation: \"%s\"\n", (char *)s);
     }
   } else if (csv_params->curr_field_idx == csv_params->ttl_field_idx) {
     req->ttl = (uint32_t)strtoul((char *)s, &end, 0);
@@ -319,7 +319,7 @@ void csv_setup_reader(reader_t *const reader) {
   csv_params->n_obj_id_is_not_num = 0;
 
   if (csv_init(csv_params->csv_parser, options) != 0) {
-    fprintf(stderr, "Failed to initialize csv parser\n");
+    LOG(ERROR, STREAM_Reader, "Failed to initialize csv parser");
     exit(1);
   }
 
@@ -368,7 +368,7 @@ int csv_read_one_req(reader_t *const reader, request_t *const req) {
 
   if ((ssize_t)csv_parse(csv_parser, *line_buf_ptr, read_size, csv_cb1, csv_cb2,
                          reader) != read_size) {
-    WARN("parsing csv file error: %s\n",
+    LOG(WARN, STREAM_Reader, "parsing csv file error: %s\n",
          csv_strerror(csv_error(csv_params->csv_parser)));
   }
 

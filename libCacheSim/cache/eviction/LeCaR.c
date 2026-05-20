@@ -12,7 +12,7 @@
 
 #include "dataStructure/hashtable/hashtable.h"
 #include "libCacheSim/evictionAlgo.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -288,7 +288,7 @@ static cache_obj_t *LeCaR_find(cache_t *cache, const request_t *req,
      * when remove_obj_from_freq_node */
     if (cache_obj->LeCaR.freq < params->min_freq) {
       params->min_freq = cache_obj->LeCaR.freq;
-      VERBOSE("update min freq to %d\n", (int)params->min_freq);
+      LOG(DEBUG, STREAM_Eviction, "update min freq to %d\n", (int)params->min_freq);
     }
   }
 
@@ -312,7 +312,7 @@ static cache_obj_t *LeCaR_find(cache_t *cache, const request_t *req,
 cache_obj_t *LeCaR_insert(cache_t *cache, const request_t *req) {
   LeCaR_params_t *params = (LeCaR_params_t *)(cache->eviction_params);
 
-  VERBOSE("insert object %lu into cache\n", (unsigned long)req->obj_id);
+  LOG(DEBUG, STREAM_Eviction, "insert object %lu into cache\n", (unsigned long)req->obj_id);
 
   // LRU and hash table insert
   cache_obj_t *cache_obj = cache_insert_base(cache, req);
@@ -615,7 +615,7 @@ static void LeCaR_parse_params(cache_t *cache,
       else
         params->update_weight = false;
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "lru-weight") == 0) {
       params->w_lru = (double)strtod(value, &end);
@@ -623,7 +623,7 @@ static void LeCaR_parse_params(cache_t *cache,
       printf("current parameters: %s\n", LeCaR_current_params(cache, params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }
@@ -652,7 +652,7 @@ static inline void update_LFU_min_freq(LeCaR_params_t *params) {
       break;
     }
   }
-  VERBOSE("update LFU min freq from %ld to %ld\n", old_min_freq,
+  LOG(DEBUG, STREAM_Eviction, "update LFU min freq from %ld to %ld\n", old_min_freq,
           params->min_freq);
   // if the object is the only object in the cache, we may have min_freq == 1
   DEBUG_ASSERT(params->min_freq > old_min_freq ||
@@ -682,19 +682,19 @@ static inline void remove_obj_from_freq_node(LeCaR_params_t *params,
   DEBUG_ASSERT(freq_node != NULL);
   DEBUG_ASSERT(freq_node->freq == cache_obj->LeCaR.freq);
   DEBUG_ASSERT(freq_node->n_obj > 0);
-  VERBOSE("remove object from freq node %p (freq %ld, %u obj)\n", freq_node,
+  LOG(DEBUG, STREAM_Eviction, "remove object from freq node %p (freq %ld, %u obj)\n", (void*)freq_node,
           freq_node->freq, freq_node->n_obj);
   freq_node->n_obj--;
 
   if (cache_obj == freq_node->first_obj) {
-    VERBOSE("remove object from freq node --- object is the first object\n");
+    LOG(DEBUG, STREAM_Eviction, "remove object from freq node --- object is the first object\n");
     freq_node->first_obj = cache_obj->LeCaR.lfu_next;
     if (cache_obj->LeCaR.lfu_next != NULL)
       ((cache_obj_t *)(cache_obj->LeCaR.lfu_next))->LeCaR.lfu_prev = NULL;
   }
 
   if (cache_obj == freq_node->last_obj) {
-    VERBOSE("remove object from freq node --- object is the last object\n");
+    LOG(DEBUG, STREAM_Eviction, "remove object from freq node --- object is the last object\n");
     freq_node->last_obj = cache_obj->LeCaR.lfu_prev;
     if (cache_obj->LeCaR.lfu_prev != NULL)
       ((cache_obj_t *)(cache_obj->LeCaR.lfu_prev))->LeCaR.lfu_next = NULL;
@@ -787,11 +787,11 @@ static void verify_ghost_lru_integrity(cache_t *cache, LeCaR_params_t *params) {
     cur = cur->queue.next;
   }
 
-  VERBOSE(
+  LOG(DEBUG, STREAM_Eviction, 
       "ghost entry head %p tail %p, "
       "ghost_entry_size from scan = %ld,"
       "lru_g_occupied_byte = %ld\n ",
-      params->ghost_lru_head, params->ghost_lru_tail, ghost_entry_size,
+      (void*)params->ghost_lru_head, (void*)params->ghost_lru_tail, ghost_entry_size,
       params->lru_g_occupied_byte);
 
   assert(ghost_entry_size == params->lru_g_occupied_byte);

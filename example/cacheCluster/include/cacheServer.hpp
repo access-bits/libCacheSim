@@ -22,7 +22,7 @@
 #include "cache.hpp"
 #include "libCacheSim/cache.h"
 #include "libCacheSim/evictionAlgo.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 
 namespace CDNSimulator {
 

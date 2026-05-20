@@ -141,7 +141,7 @@ cache_t *WTinyLFU_init(const common_cache_params_t ccache_params,
   } else if (strcasecmp(params->main_cache_type, "SIEVE") == 0) {
     params->main_cache = Sieve_init(ccache_params_local, NULL);
   } else {
-    ERROR("WTinyLFU does not support %s \n", params->main_cache_type);
+    LOG(ERROR, STREAM_Eviction, "WTinyLFU does not support %s \n", params->main_cache_type);
   }
 
   snprintf(cache->cache_name, CACHE_NAME_ARRAY_LEN, "WTinyLFU-w%.2lf-%s",
@@ -162,7 +162,7 @@ cache_t *WTinyLFU_init(const common_cache_params_t ccache_params,
   int ret = minimalIncrementCBF_init(params->CBF,
                                      params->main_cache->cache_size, 0.001);
   if (ret != 0) {
-    ERROR("CBF init failed\n");
+    LOG(ERROR, STREAM_Eviction, "CBF init failed\n");
   }
 
 #ifdef DEBUG_MODE
@@ -369,11 +369,11 @@ static void WTinyLFU_parse_params(cache_t *cache,
     } else if (strcasecmp(key, "window-size") == 0) {
       params->window_size = strtod(value, NULL);  // cover default value
       if (params->window_size < 0 || params->window_size >= 1) {
-        ERROR("window_size must be in [0, 1)\n");
+        LOG(ERROR, STREAM_Eviction, "window_size must be in [0, 1)\n");
         exit(1);
       }
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

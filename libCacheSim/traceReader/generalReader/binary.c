@@ -43,11 +43,11 @@ int binaryReader_setup(reader_t *const reader) {
 
   /* begin parsing input params and fmt */
   if (reader->init_params.binary_fmt_str == NULL) {
-    ERROR("binaryReader_setup: fmt_str is NULL\n");
+    LOG(ERROR, STREAM_Reader, "binaryReader_setup: fmt_str is NULL\n");
   }
 
   if (reader->init_params.binary_fmt_str[0] != '<') {
-    ERROR(
+    LOG(ERROR, STREAM_Reader, 
         "binary trace only supports little endian and format string should "
         "start with <\n");
   }
@@ -122,13 +122,13 @@ int binaryReader_setup(reader_t *const reader) {
   reader->item_size = cal_offset(fmt_str, params->n_fields + 1);
   params->item_size = reader->item_size;
   if (reader->item_size == 0) {
-    ERROR("binaryReader_setup: item_size is 0, fmt \"%s\", %d fields\n",
+    LOG(ERROR, STREAM_Reader, "binaryReader_setup: item_size is 0, fmt \"%s\", %d fields\n",
           fmt_str, params->n_fields);
   }
 
   ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
   if (data_region_size % reader->item_size != 0) {
-    WARN(
+    LOG(WARN, STREAM_Reader, 
         "trace file size %lu - %lu is not multiple of item size %lu, mod %lu\n",
         (unsigned long)reader->file_size,
         (unsigned long)reader->trace_start_offset,
@@ -179,7 +179,7 @@ int binaryReader_setup(reader_t *const reader) {
                   format_to_size(params->next_access_vtime_format),
                   params->next_access_vtime_offset);
   }
-  DEBUG("%s\n", output);
+  LOG(DEBUG, STREAM_Reader, "%s\n", output);
 
   return 0;
 }
@@ -216,7 +216,7 @@ static inline int64_t read_data(char *src, char format) {
     case 'd':
       return (int64_t)(*(double *)src);
     default:
-      ERROR("DO NOT recognize given format character: %c\n", format);
+      LOG(ERROR, STREAM_Reader, "DO NOT recognize given format character: %c\n", format);
       break;
   }
 }

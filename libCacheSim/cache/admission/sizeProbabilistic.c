@@ -38,7 +38,7 @@ static void size_probabilistic_admissioner_parse_params(
     const char *init_params, size_probabilistic_admission_params_t *pa) {
   if (init_params == NULL) {
     pa->exponent = 1e-6;
-    INFO("use default admission exponent: %f\n", pa->exponent);
+    LOG(INFO, STREAM_Cache, "use default admission exponent: %f\n", pa->exponent);
   } else {
     char *params_str = strdup(init_params);
     char *old_params_str = params_str;
@@ -58,18 +58,18 @@ static void size_probabilistic_admissioner_parse_params(
       if (strcasecmp(key, "exponent") == 0) {
         pa->exponent = strtod(value, &end);
         if (strlen(end) > 2) {
-          ERROR("param parsing error, find string \"%s\" after number\n", end);
+          LOG(ERROR, STREAM_Cache, "param parsing error, find string \"%s\" after number\n", end);
         }
-        INFO("use admission exponent: %f\n", pa->exponent);
+        LOG(INFO, STREAM_Cache, "use admission exponent: %f\n", pa->exponent);
       } else {
-        ERROR("size-probabilistic admission does not have parameter %s\n", key);
+        LOG(ERROR, STREAM_Cache, "size-probabilistic admission does not have parameter %s\n", key);
       }
     }
     free(old_params_str);
   }
 
   if (pa->exponent > 1 || pa->exponent <= 0) {
-    ERROR(
+    LOG(ERROR, STREAM_Cache, 
         "size-probabilistic admissioner calculates probability e^(-exponent * "
         "obj_size) to admit object, a common "
         "exponent should be 0-1, e.g., 1e-6, but input %lf\n",

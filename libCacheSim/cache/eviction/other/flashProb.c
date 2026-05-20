@@ -95,7 +95,7 @@ cache_t *flashProb_init(const common_cache_params_t ccache_params,
   int64_t disk_cache_size = ccache_params.cache_size - ram_cache_size;
 
   if (ram_cache_size <= 0 || disk_cache_size <= 0) {
-    ERROR("Invalid cache size configuration: ram=%lld bytes, disk=%lld bytes\n",
+    LOG(ERROR, STREAM_Eviction, "Invalid cache size configuration: ram=%lld bytes, disk=%lld bytes\n",
           (long long)ram_cache_size, (long long)disk_cache_size);
   }
 
@@ -128,7 +128,7 @@ cache_t *flashProb_init(const common_cache_params_t ccache_params,
   } else if (strcasecmp(params->ram_cache_type, "Hyperbolic") == 0) {
     params->ram = Hyperbolic_init(ccache_params_local, NULL);
   } else {
-    ERROR("flashProb does not support %s\n", params->ram_cache_type);
+    LOG(ERROR, STREAM_Eviction, "flashProb does not support %s\n", params->ram_cache_type);
   }
 
   ccache_params_local.cache_size = disk_cache_size;
@@ -137,7 +137,7 @@ cache_t *flashProb_init(const common_cache_params_t ccache_params,
   } else if (strcasecmp(params->disk_cache_type, "clock") == 0) {
     params->disk = Clock_init(ccache_params_local, NULL);
   } else {
-    ERROR("flashProb does not support %s\n", params->disk_cache_type);
+    LOG(ERROR, STREAM_Eviction, "flashProb does not support %s\n", params->disk_cache_type);
   }
 
   snprintf(cache->cache_name, CACHE_NAME_ARRAY_LEN,
@@ -397,7 +397,7 @@ static void flashProb_parse_params(cache_t *cache,
       printf("parameters: %s\n", flashProb_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

@@ -437,7 +437,7 @@ static void SLRU_parse_params(cache_t *cache,
     if (strcasecmp(key, "n-seg") == 0) {
       params->n_seg = (int)strtol(value, &end, 0);
       if (strlen(end) > 2) {
-        ERROR("param parsing error, find string \"%s\" after number\n", end);
+        LOG(ERROR, STREAM_Eviction, "param parsing error, find string \"%s\" after number\n", end);
       }
     } else if (strcasecmp(key, "seg-size") == 0) {
       int n_seg = 0;
@@ -456,7 +456,7 @@ static void SLRU_parse_params(cache_t *cache,
             (int64_t)((double)seg_size_array[i] / seg_size_sum *
                       cache->cache_size);
         if (params->lru_max_n_bytes[i] <= 0) {
-          ERROR("Invalid segment size for segment %d: %lld bytes\n", i,
+          LOG(ERROR, STREAM_Eviction, "Invalid segment size for segment %d: %lld bytes\n", i,
                 (long long)params->lru_max_n_bytes[i]);
         }
       }
@@ -464,7 +464,7 @@ static void SLRU_parse_params(cache_t *cache,
       printf("current parameters: %s\n", SLRU_current_params(cache, params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

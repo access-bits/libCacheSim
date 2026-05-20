@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "internal.hpp"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/reader.h"
 #include "traceReader/customizedReader/lcs.h"
 #include "utils/include/mymath.h"

@@ -29,7 +29,7 @@ static void prob_admissioner_parse_params(const char *init_params,
                                           prob_admission_params_t *pa) {
   if (init_params == NULL) {
     pa->admission_probability = 0.5;
-    INFO("use default admission probability: %f\n", pa->admission_probability);
+    LOG(INFO, STREAM_Cache, "use default admission probability: %f\n", pa->admission_probability);
   } else {
     char *params_str = strdup(init_params);
     char *old_params_str = params_str;
@@ -49,11 +49,11 @@ static void prob_admissioner_parse_params(const char *init_params,
       if (strcasecmp(key, "prob") == 0) {
         pa->admission_probability = strtod(value, &end);
         if (strlen(end) > 2) {
-          ERROR("param parsing error, find string \"%s\" after number\n", end);
+          LOG(ERROR, STREAM_Cache, "param parsing error, find string \"%s\" after number\n", end);
         }
-        INFO("use admission probability: %f\n", pa->admission_probability);
+        LOG(INFO, STREAM_Cache, "use admission probability: %f\n", pa->admission_probability);
       } else {
-        ERROR("probabilistic admission does not have parameter %s\n", key);
+        LOG(ERROR, STREAM_Cache, "probabilistic admission does not have parameter %s\n", key);
       }
     }
     free(old_params_str);
@@ -61,10 +61,10 @@ static void prob_admissioner_parse_params(const char *init_params,
   pa->admission_probability_int = pa->admission_probability * MAX_MODULE;
 
   if (pa->admission_probability > 1 || pa->admission_probability <= 0) {
-    ERROR("prob admissioner probability error get %lf (should be 0-1)\n",
+    LOG(ERROR, STREAM_Cache, "prob admissioner probability error get %lf (should be 0-1)\n",
           pa->admission_probability);
   } else if (pa->admission_probability == 1) {
-    WARN("prob admission probability 1\n");
+    LOG(WARN, STREAM_Cache, "prob admission probability 1\n");
   }
 }
 

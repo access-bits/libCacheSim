@@ -61,7 +61,7 @@ static void train_xgboost(cache_t *cache) {
     train_loss = strtof(train_pos, NULL);
     valid_loss = strtof(valid_pos, NULL);
 
-    // DEBUG("%.2lf hour, cache size %.2lf MB, iter %d, train loss %.4lf, valid
+    // LOG(DEBUG, STREAM_Eviction, "%.2lf hour, cache size %.2lf MB, iter %d, train loss %.4lf, valid
     // loss %.4lf\n",
     //     (double) params->curr_rtime / 3600.0,
     //     (double) cache->cache_size / 1024.0 / 1024.0,
@@ -79,7 +79,7 @@ static void train_xgboost(cache_t *cache) {
 #elif OBJECTIVE == LTR
     char *train_pos = strstr(eval_result, "train-map") + 10;
     char *valid_pos = strstr(eval_result, "valid-map") + 10;
-    // DEBUG("%s\n", eval_result);
+    // LOG(DEBUG, STREAM_Eviction, "%s\n", eval_result);
 #else
 #error
 #endif
@@ -88,7 +88,7 @@ static void train_xgboost(cache_t *cache) {
   safe_call(XGBoosterBoostedRounds(learner->booster, &learner->n_trees));
 #endif
 
-  DEBUG(
+  LOG(DEBUG, STREAM_Eviction, 
       "%.2lf hour, cache size %.2lf MB, vtime %ld, train/valid %d/%d samples, "
       "%d trees, "
       "rank intvl %.4lf\n",
@@ -102,7 +102,7 @@ static void train_xgboost(cache_t *cache) {
     static __thread char s[128];
     snprintf(s, 128, "dump/model_%d.bin", learner->n_train);
     safe_call(XGBoosterSaveModel(learner->booster, s));
-    INFO("dump model %s\n", s);
+    LOG(INFO, STREAM_Eviction, "dump model %s\n", s);
   }
 #endif
 }
@@ -117,14 +117,14 @@ void train(cache_t *cache) {
     snprintf(s, 128, "dump/model_%d.bin", 1);
 
     safe_call(XGBoosterLoadModel(learner->booster, s));
-    INFO("Load model %s\n", s);
+    LOG(INFO, STREAM_Eviction, "Load model %s\n", s);
   }
 #else
   train_xgboost(cache);
 #endif
 
   uint64_t end_time = gettime_usec();
-  // INFO("training time %.4lf sec\n", (end_time - start_time) / 1000000.0);
+  // LOG(INFO, STREAM_Eviction, "training time %.4lf sec\n", (end_time - start_time) / 1000000.0);
   params->learner.n_train += 1;
   params->learner.last_train_rtime = params->curr_rtime;
   params->learner.n_train_samples = 0;

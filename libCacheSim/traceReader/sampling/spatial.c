@@ -3,7 +3,7 @@
  **/
 
 #include "dataStructure/hash/hash.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/sampling.h"
 
 #ifdef __cplusplus
@@ -30,7 +30,7 @@ sampler_t *clone_spatial_sampler(const sampler_t *sampler) {
   sampler_t *cloned_sampler = my_malloc(sampler_t);
   memcpy(cloned_sampler, sampler, sizeof(sampler_t));
 
-  VERBOSE("clone spatial sampler\n");
+  LOG(DEBUG, STREAM_Reader, "clone spatial sampler\n");
   return cloned_sampler;
 }
 
@@ -38,12 +38,12 @@ void free_spatial_sampler(sampler_t *sampler) { free(sampler); }
 
 sampler_t *create_spatial_sampler(double sampling_ratio) {
   if (sampling_ratio > 1 || sampling_ratio <= 0) {
-    ERROR("sampling ratio range error get %lf (should be 0-1)\n",
+    LOG(ERROR, STREAM_Reader, "sampling ratio range error get %lf (should be 0-1)\n",
           sampling_ratio);
   } else if (sampling_ratio > 0.5) {
-    ERROR("currently we only support sampling ratio no more than 0.5\n");
+    LOG(ERROR, STREAM_Reader, "currently we only support sampling ratio no more than 0.5\n");
   } else if (sampling_ratio == 1) {
-    WARN("spatial sampler ratio 1 means no sampling\n");
+    LOG(WARN, STREAM_Reader, "spatial sampler ratio 1 means no sampling\n");
     return NULL;
   }
 
@@ -60,16 +60,16 @@ sampler_t *create_spatial_sampler(double sampling_ratio) {
 
   print_sampler(s);
 
-  VERBOSE("create spatial sampler with ratio %lf\n", sampling_ratio);
+  LOG(DEBUG, STREAM_Reader, "create spatial sampler with ratio %lf\n", sampling_ratio);
   return s;
 }
 
 void set_spatial_sampler_salt(sampler_t *sampler, uint64_t salt) {
   if (sampler->type != SPATIAL_SAMPLER) {
-    ERROR("set spatial sampler salt error, sampler type %d\n", sampler->type);
+    LOG(ERROR, STREAM_Reader, "set spatial sampler salt error, sampler type %d\n", sampler->type);
   }
   sampler->sampling_salt = salt;
-  VERBOSE("set spatial sampler salt to %lu\n", salt);
+  LOG(DEBUG, STREAM_Reader, "set spatial sampler salt to %lu\n", salt);
 }
 
 #ifdef __cplusplus

@@ -33,7 +33,7 @@ extern "C" {
 #include <sys/mman.h>
 
 #include "../hash/hash.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/macro.h"
 #include "utils/include/mymath.h"
 
@@ -96,7 +96,7 @@ hashtable_t *create_chained_hashtable_v2(const uint16_t hashpower) {
   size_t size = sizeof(cache_obj_t *) * hashsize(hashtable->hashpower);
   hashtable->ptr_table = my_malloc_n(cache_obj_t *, hashsize(hashpower));
   if (hashtable->ptr_table == NULL) {
-    ERROR("allocate hash table %zu entry * %lu B = %ld MiB failed\n",
+    LOG(ERROR, STREAM_Utils, "allocate hash table %zu entry * %lu B = %ld MiB failed\n",
           sizeof(cache_obj_t *), (unsigned long)(hashsize(hashpower)),
           (long)(sizeof(cache_obj_t *) * hashsize(hashpower) / 1024 / 1024));
     exit(1);
@@ -187,7 +187,7 @@ void chained_hashtable_delete_v2(hashtable_t *hashtable,
 
   if (chain_len > max_chain_len) {
     max_chain_len = chain_len;
-    WARN("hashtable remove %lu chain len %d, hashtable load %ld/%ld %lf\n",
+    LOG(WARN, STREAM_Utils, "hashtable remove %lu chain len %d, hashtable load %ld/%ld %lf\n",
          (unsigned long)cache_obj->obj_id, max_chain_len,
          (long)hashtable->n_obj, (long)hashsize(hashtable->hashpower),
          (double)hashtable->n_obj / hashsize(hashtable->hashpower));
@@ -225,7 +225,7 @@ bool chained_hashtable_try_delete_v2(hashtable_t *hashtable,
 
   if (chain_len > 16 && chain_len > max_chain_len) {
     max_chain_len = chain_len;
-    //    WARN("hashtable remove %ld, hv %lu, max chain len %d, hashtable load
+    //    LOG(WARN, STREAM_Utils, "hashtable remove %ld, hv %lu, max chain len %d, hashtable load
     //    %ld/%ld %lf\n",
     //           (long) cache_obj->obj_id,
     //           (unsigned long) hv, max_chain_len,
@@ -382,7 +382,7 @@ static void _chained_hashtable_shrink_v2(hashtable_t *hashtable) {
                   "unable to shrink hashtable to size %llu\n",
                   hashsizeULL(hashtable->hashpower));
 
-  DEBUG(
+  LOG(DEBUG, STREAM_Utils, 
       "shrink hash table size from %llu to %llu, new hashtable load "
       "%llu/%llu\n",
       (unsigned long long)hashsizeULL((uint16_t)(hashtable->hashpower + 1)),
@@ -410,7 +410,7 @@ static void _chained_hashtable_expand_v2(hashtable_t *hashtable) {
                   "unable to grow hashtable to size %llu\n",
                   hashsizeULL(hashtable->hashpower));
 
-  DEBUG(
+  LOG(DEBUG, STREAM_Utils, 
       "expand hashtable from %llu to %llu entries, new hashtable load "
       "%llu/%llu\n",
       (unsigned long long)hashsizeULL((uint16_t)(hashtable->hashpower - 1)),
@@ -442,7 +442,7 @@ static int count_n_obj_in_bucket(cache_obj_t *curr_obj) {
     obj_id_arr[chain_len] = curr_obj->obj_id;
     for (int i = 0; i < chain_len; i++) {
       if (obj_id_arr[i] == curr_obj->obj_id) {
-        ERROR("obj_id %lu is duplicated in hashtable\n",
+        LOG(ERROR, STREAM_Utils, "obj_id %lu is duplicated in hashtable\n",
               (unsigned long)curr_obj->obj_id);
         abort();
       }

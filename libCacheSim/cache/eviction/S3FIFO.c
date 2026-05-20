@@ -118,7 +118,7 @@ cache_t *S3FIFO_init(const common_cache_params_t ccache_params,
       (int64_t)(ccache_params.cache_size * params->ghost_size_ratio);
 
   if (small_fifo_size <= 0 || main_fifo_size <= 0) {
-    ERROR(
+    LOG(ERROR, STREAM_Eviction, 
         "Invalid cache size configuration: small_fifo=%lld bytes, "
         "main_fifo=%lld "
         "bytes\n",
@@ -477,7 +477,7 @@ static void S3FIFO_parse_params(cache_t *cache,
       printf("parameters: %s\n", S3FIFO_current_params(params));
       exit(0);
     } else {
-      ERROR("%s does not have parameter %s\n", cache->cache_name, key);
+      LOG(ERROR, STREAM_Eviction, "%s does not have parameter %s\n", cache->cache_name, key);
       exit(1);
     }
   }

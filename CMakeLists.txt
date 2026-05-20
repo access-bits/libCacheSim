@@ -125,17 +125,23 @@ find_package(PkgConfig REQUIRED)
 # Find glib-2.0 using pkg-config
 pkg_check_modules(GLib REQUIRED glib-2.0)
 
-# Add GLib library directories to the linker search path
+# Find libyaml using pkg-config
+pkg_check_modules(libyaml REQUIRED yaml-0.1)
+
+# Add library directories to the linker search path
 link_directories(${GLib_LIBRARY_DIRS})
+link_directories(${libyaml_LIBRARY_DIRS})
 
 # Don't add GLib includes globally - add them to specific targets
 # include_directories(${GLib_INCLUDE_DIRS})
 list(APPEND dependency_libs ${GLib_LIBRARIES})
 
-find_package(argp REQUIRED)
-# Don't add argp includes globally
-# include_directories(${ARGP_INCLUDE_DIRS})
-list(APPEND dependency_libs ${ARGP_LIBRARY})
+find_package(argp)
+if(argp_FOUND OR ARGP_LIBRARY)
+  # Don't add argp includes globally
+  # include_directories(${ARGP_INCLUDE_DIRS})
+  list(APPEND dependency_libs ${ARGP_LIBRARY})
+endif()
 
 if(OPT_SUPPORT_ZSTD_TRACE)
     add_compile_definitions(SUPPORT_ZSTD_TRACE=1)
@@ -241,6 +247,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/profiler)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/utils)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/traceAnalyzer)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/mrcProfiler)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/logger)
 
 # libCacheSim binary / tool compilation
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libCacheSim/bin)
@@ -266,6 +273,7 @@ add_library(${PROJECT_NAME} STATIC
     $<TARGET_OBJECTS:utils_lib>
     $<TARGET_OBJECTS:traceAnalyzer_lib>
     $<TARGET_OBJECTS:mrcProfiler_lib>
+    $<TARGET_OBJECTS:logger_lib>
 )
 
 # Set include directories for the unified library

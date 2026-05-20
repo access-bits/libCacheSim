@@ -3,7 +3,7 @@
  **/
 
 #include "dataStructure/hash/hash.h"
-#include "libCacheSim/logging.h"
+#include "libCacheSim/log.h"
 #include "libCacheSim/sampling.h"
 
 #ifdef __cplusplus
@@ -29,7 +29,7 @@ sampler_t *clone_SHARDS_sampler(const sampler_t *sampler) {
   sampler_t *cloned_sampler = my_malloc(sampler_t);
   memcpy(cloned_sampler, sampler, sizeof(sampler_t));
 
-  VERBOSE("clone SHARDS sampler\n");
+  LOG(DEBUG, STREAM_Reader, "clone SHARDS sampler\n");
   return cloned_sampler;
 }
 
@@ -37,7 +37,7 @@ void free_SHARDS_sampler(sampler_t *sampler) { free(sampler); }
 
 sampler_t *create_SHARDS_sampler(double sampling_ratio) {
   if (sampling_ratio > 1 || sampling_ratio <= 0) {
-    ERROR("sampling ratio range error get %lf (should be 0-1)\n",
+    LOG(ERROR, STREAM_Reader, "sampling ratio range error get %lf (should be 0-1)\n",
           sampling_ratio);
   }
 
@@ -52,7 +52,7 @@ sampler_t *create_SHARDS_sampler(double sampling_ratio) {
 
   print_sampler(s);
 
-  VERBOSE("create SHARDS sampler with ratio %lf\n", sampling_ratio);
+  LOG(DEBUG, STREAM_Reader, "create SHARDS sampler with ratio %lf\n", sampling_ratio);
   return s;
 }
 

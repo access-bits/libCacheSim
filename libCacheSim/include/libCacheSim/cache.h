@@ -16,7 +16,7 @@
 #include "admissionAlgo.h"
 #include "cacheObj.h"
 #include "const.h"
-#include "logging.h"
+#include "log.h"
 #include "macro.h"
 #include "prefetchAlgo.h"
 #include "request.h"
