@@ -46,6 +46,7 @@ enum argp_option_short {
   OPTION_PREFETCH_ALGO = 'p',
   OPTION_PREFETCH_PARAMS = 0x109,
   OPTION_PRINT_HEAD_REQ = 0x10a,
+  OPTION_QUEUE_DEPTH     = 0x10b,
 };
 
 /*
@@ -94,6 +95,9 @@ static struct argp_option options[] = {
     {"verbose", OPTION_VERBOSE, "1", 0, "Produce verbose output", 10},
     {"print-head-req", OPTION_PRINT_HEAD_REQ, "false", 0,
      "Print the first few requests", 10},
+    {"queue-depth", OPTION_QUEUE_DEPTH, "1024", 0,
+     "Per-simulator request queue depth for single-reader mode (0 = default 1024)",
+     10},
 
     {0, 0, 0, 0, 0, 0}};
 
@@ -110,6 +114,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       if (arguments->n_thread == 0 || arguments->n_thread == -1) {
         arguments->n_thread = n_cores();
       }
+      break;
+    case OPTION_QUEUE_DEPTH:
+      arguments->queue_depth = atoi(arg);
       break;
     case OPTION_TRACE_TYPE_PARAMS:
       arguments->trace_type_params = arg;
@@ -228,6 +235,7 @@ static void init_arg(struct arguments *args) {
   args->consider_obj_metadata = false;
   args->report_interval = 3600 * 24;
   args->n_thread = n_cores();
+  args->queue_depth = 1024;
   args->warmup_sec = -1;
   memset(args->ofilepath, 0, OFILEPATH_LEN);
   args->n_req = -1;

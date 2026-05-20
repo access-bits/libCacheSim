@@ -39,6 +39,7 @@ struct arguments {
   char *prefetch_params;
   double sample_ratio;
   int n_thread;
+  int queue_depth;           /* per-simulator bounded-queue capacity */
   int64_t n_req; /* number of requests to process */
 
   bool verbose;

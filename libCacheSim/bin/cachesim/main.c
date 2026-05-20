@@ -28,9 +28,9 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  cache_stat_t *result = simulate_with_multi_caches(
+  cache_stat_t *result = simulate_with_single_reader(
       args.reader, args.caches, args.n_cache_size * args.n_eviction_algo, NULL,
-      0, args.warmup_sec, args.n_thread, true, true);
+      0, args.warmup_sec, args.n_thread, args.queue_depth, true, true);
 
   // output to file
   char output_str[1024];

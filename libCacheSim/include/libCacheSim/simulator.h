@@ -87,6 +87,33 @@ cache_stat_t *simulate_with_multi_caches(
     reader_t *warmup_reader, double warmup_frac, int warmup_sec,
     int num_of_threads, bool free_cache_when_finish, bool use_random_seed);
 
+/**
+ * @brief Simulate multiple caches reading the trace exactly once.
+ *
+ * A single reader thread fans each request into N per-simulator bounded
+ * queues.  Workers process their queue in parallel.  The reader blocks when
+ * any queue is full (backpressure), bounding memory to
+ * O(num_of_caches * queue_depth * sizeof(request_t)).
+ *
+ * @param queue_depth  per-simulator queue capacity (<=0 uses default 1024)
+ */
+cache_stat_t *simulate_with_single_reader(
+    reader_t *reader, cache_t *caches[], int num_of_caches,
+    reader_t *warmup_reader, double warmup_frac, int warmup_sec,
+    int num_of_threads, int queue_depth, bool free_cache_when_finish,
+    bool use_random_seed);
+
+/**
+ * @brief MRC sweep equivalent to simulate_at_multi_sizes but reads the trace
+ *        exactly once using the single-reader architecture.
+ *
+ * @param queue_depth  per-simulator queue capacity (<=0 uses default 1024)
+ */
+cache_stat_t *simulate_at_multi_sizes_single_reader(
+    reader_t *reader, const cache_t *cache, int num_of_sizes,
+    const uint64_t *cache_sizes, reader_t *warmup_reader, double warmup_frac,
+    int warmup_sec, int num_of_threads, int queue_depth, bool use_random_seed);
+
 #ifdef __cplusplus
 }
 #endif

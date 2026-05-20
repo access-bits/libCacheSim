@@ -13,6 +13,7 @@ extern "C" {
 #include "libCacheSim/simulator.h"
 
 #include <math.h>
+#include <semaphore.h>
 
 #include "../cache/cacheUtils.h"
 #include "../utils/include/myprint.h"
@@ -380,6 +381,401 @@ cache_stat_t *simulate_with_multi_caches_scaling(
   for (int i = 0; i < num_of_caches; i++) {
     result[i].sampler_ratio = readers[i]->sampler->sampling_ratio;
   }
+  return result;
+}
+
+
+/* ================================================================
+ * Bounded ring-buffer queue — used by simulate_with_single_reader
+ *
+ * Batch-and-barrier pattern: Reader accumulates requests in local buffer,
+ * waits for all queues to drain, then bulk-pushes entire batch to all queues.
+ * Memory bounded at O(num_caches * queue_depth * sizeof(request_t)).
+ * ================================================================ */
+
+#define BQUEUE_DEFAULT_DEPTH 1024
+
+typedef struct {
+  request_t *buf;        /* ring buffer; stores request_t by value */
+  int        capacity;
+  int        head, tail, count;
+  GMutex     mutex;      /* protects head/tail/count/closed */
+  sem_t      empty_sem;  /* worker posts when queue drains to 0 */
+  sem_t      ready_sem;  /* reader posts when new batch is ready */
+  bool       closed;     /* set by reader at EOF; worker exits */
+} bounded_queue_t;
+
+static bounded_queue_t *bqueue_create(int capacity) {
+  bounded_queue_t *q = malloc(sizeof(bounded_queue_t));
+  q->buf      = malloc(sizeof(request_t) * (size_t)capacity);
+  q->capacity = capacity;
+  q->head = q->tail = q->count = 0;
+  q->closed   = false;
+  g_mutex_init(&q->mutex);
+  sem_init(&q->empty_sem, 0, 1);  /* starts at 1; queue begins empty */
+  sem_init(&q->ready_sem, 0, 0);  /* starts at 0; reader posts when ready */
+  return q;
+}
+
+static void bqueue_destroy(bounded_queue_t *q) {
+  sem_destroy(&q->empty_sem);
+  sem_destroy(&q->ready_sem);
+  g_mutex_clear(&q->mutex);
+  free(q->buf);
+  free(q);
+}
+
+/**
+ * Reader: Bulk-push a batch of requests to queue.
+ * Normally batch_size == queue_depth (barrier ensures queue is empty).
+ * Only the final batch may be < queue_depth (EOF reached).
+ */
+static void bqueue_push_batch(bounded_queue_t *q, const request_t *batch,
+                               int batch_size) {
+  g_mutex_lock(&q->mutex);
+  
+  /* Bulk copy batch */
+  memcpy(q->buf, batch, (size_t)batch_size * sizeof(request_t));
+  q->head  = 0;
+  q->tail  = batch_size % q->capacity;
+  q->count = batch_size;
+  
+  g_mutex_unlock(&q->mutex);
+  
+  /* Signal worker that batch is ready */
+  sem_post(&q->ready_sem);
+}
+
+/**
+ * Worker: Process all requests from queue while holding lock.
+ * No contention - reader is blocked at barrier waiting for empty_sem.
+ * Returns number of requests processed (queue_depth normally, 0 on EOF).
+ */
+static int bqueue_process_batch(bounded_queue_t *q, cache_t *cache,
+                                 cache_stat_t *result, uint64_t *consumed,
+                                 int64_t *start_ts, uint64_t n_warmup_from_wr,
+                                 uint64_t n_warmup_req, int warmup_sec) {
+  g_mutex_lock(&q->mutex);
+  
+  if (q->count == 0 && q->closed) {
+    g_mutex_unlock(&q->mutex);
+    return 0;  /* EOF */
+  }
+  
+  int batch_size = q->count;
+  
+  /* Process all requests directly from queue buffer (while holding lock) */
+  for (int i = 0; i < batch_size; i++) {
+    request_t *req = &q->buf[q->head];
+    q->head = (q->head + 1) % q->capacity;
+    (*consumed)++;
+
+    /* Phase 1 — warmup_reader requests: always warmup, raw timestamps */
+    if (*consumed <= n_warmup_from_wr) {
+      cache->get(cache, req);
+      result->n_warmup_req++;
+      continue;
+    }
+
+    /* Record time base on the first main-reader request */
+    if (*start_ts == INT64_MIN) {
+      *start_ts = req->clock_time;
+    }
+    req->clock_time -= *start_ts;
+
+    /* Phase 2 — count/time-based warmup from main reader */
+    uint64_t main_idx = *consumed - n_warmup_from_wr; /* 1-based */
+    if (main_idx <= n_warmup_req ||
+        (warmup_sec > 0 && req->clock_time < (int64_t)warmup_sec)) {
+      cache->get(cache, req);
+      result->n_warmup_req++;
+      continue;
+    }
+
+    /* Phase 3 — measured simulation */
+    result->n_req++;
+    result->n_req_byte += req->obj_size;
+    result->n_req_cost += req->obj_cost;
+    if (!cache->get(cache, req)) {
+      result->n_miss++;
+      result->n_miss_byte += req->obj_size;
+      result->n_miss_cost += req->obj_cost;
+    }
+  }
+  
+  q->count = 0;
+  
+  g_mutex_unlock(&q->mutex);
+  
+  /* Signal reader that queue is empty (barrier synchronization) */
+  sem_post(&q->empty_sem);
+  
+  return batch_size;
+}
+
+/**
+ * Reader: Signal EOF and wake worker for final cleanup.
+ */
+static void bqueue_close(bounded_queue_t *q) {
+  g_mutex_lock(&q->mutex);
+  q->closed = true;
+  g_mutex_unlock(&q->mutex);
+  
+  /* Wake worker so it can see closed flag and exit */
+  sem_post(&q->ready_sem);
+}
+
+/* Per-worker parameters for _simulate_from_queue */
+typedef struct {
+  bounded_queue_t *queue;
+  cache_t         *cache;
+  cache_stat_t    *result;
+  uint64_t         n_warmup_from_wr; /* items from warmup_reader (always warmup) */
+  uint64_t         n_warmup_req;     /* additional count-based warmup from main reader */
+  int              warmup_sec;       /* time-based warmup from main reader */
+  bool             free_cache_when_finish;
+  bool             use_random_seed;
+  GMutex          *progress_mtx;
+  gint            *progress;
+} sim_queue_worker_params_t;
+
+static void _simulate_from_queue(gpointer data, gpointer user_data) {
+  (void)user_data;
+  sim_queue_worker_params_t *p = (sim_queue_worker_params_t *)data;
+
+  if (p->use_random_seed) {
+    set_rand_seed(rand());
+  } else {
+    set_rand_seed(1);
+  }
+
+  cache_t      *cache  = p->cache;
+  cache_stat_t *result = p->result;
+  strncpy(result->cache_name, cache->cache_name, CACHE_NAME_ARRAY_LEN - 1);
+  result->cache_name[CACHE_NAME_ARRAY_LEN - 1] = '\0';
+
+  uint64_t consumed = 0;
+  int64_t  start_ts = INT64_MIN;
+
+  /* Batch-and-barrier loop: wait for batch → process from queue buffer */
+  while (true) {
+    /* Wait for reader to signal batch ready */
+    sem_wait(&p->queue->ready_sem);
+    
+    /* Process all requests directly from queue buffer (single lock held) */
+    int processed = bqueue_process_batch(
+        p->queue, cache, result, &consumed, &start_ts,
+        p->n_warmup_from_wr, p->n_warmup_req, p->warmup_sec);
+    
+    if (processed == 0) {
+      break;  /* EOF reached */
+    }
+  }
+
+  result->n_obj         = cache->n_obj;
+  result->occupied_byte = cache->occupied_byte;
+
+  g_mutex_lock(p->progress_mtx);
+  (*p->progress)++;
+  g_mutex_unlock(p->progress_mtx);
+
+  if (p->free_cache_when_finish) {
+    cache->cache_free(cache);
+  }
+  
+  free(p);
+}
+
+/**
+ * @brief Simulate multiple caches reading the trace exactly once.
+ *
+ * Uses batch-and-barrier pattern: reader accumulates requests in local buffer
+ * (up to queue_depth), waits for all workers to drain their queues, then
+ * bulk-pushes entire batch to all queues. Workers process batches in parallel.
+ * Memory bounded at O(num_of_caches * queue_depth * sizeof(request_t)).
+ *
+ * warmup_reader, warmup_frac and warmup_sec are mutually exclusive.
+ *
+ * @param reader                  trace reader (read once on calling thread)
+ * @param caches                  array of initialised cache_t* to simulate
+ * @param num_of_caches           length of caches[]
+ * @param warmup_reader           optional separate warmup trace (may be NULL)
+ * @param warmup_frac             fraction of main-trace requests used as warmup
+ * @param warmup_sec              seconds of trace time used as warmup
+ * @param num_of_threads          worker thread pool size
+ * @param queue_depth             per-simulator queue capacity (<=0 → default 1024)
+ * @param free_cache_when_finish  if true each cache is freed when its worker finishes
+ * @param use_random_seed         if true each worker seeds RNG with rand()
+ * @return heap-allocated array of cache_stat_t; caller must free
+ */
+cache_stat_t *simulate_with_single_reader(
+    reader_t *reader, cache_t *caches[], int num_of_caches,
+    reader_t *warmup_reader, double warmup_frac, int warmup_sec,
+    int num_of_threads, int queue_depth, bool free_cache_when_finish,
+    bool use_random_seed) {
+  assert(num_of_caches > 0);
+  if (queue_depth <= 0) queue_depth = BQUEUE_DEFAULT_DEPTH;
+
+  cache_stat_t *result = my_malloc_n(cache_stat_t, num_of_caches);
+  memset(result, 0, sizeof(cache_stat_t) * num_of_caches);
+
+  /* Allocate per-simulator bounded queues */
+  bounded_queue_t **queues = my_malloc_n(bounded_queue_t *, num_of_caches);
+  for (int i = 0; i < num_of_caches; i++) {
+    queues[i]            = bqueue_create(queue_depth);
+    result[i].cache_size = caches[i]->cache_size;
+  }
+
+  /* Count main-reader requests for warmup_frac (does not advance reader) */
+  uint64_t n_warmup_req = 0;
+  if (warmup_frac > 1e-6) {
+    n_warmup_req = (uint64_t)((double)get_num_of_req(reader) * warmup_frac);
+  }
+
+  /* Count warmup_reader items so workers know the warmup boundary */
+  uint64_t n_warmup_from_wr = 0;
+  if (warmup_reader != NULL) {
+    n_warmup_from_wr = (uint64_t)get_num_of_req(warmup_reader);
+  }
+
+  /* Progress tracking */
+  int    progress = 0;
+  GMutex progress_mtx;
+  g_mutex_init(&progress_mtx);
+
+  /* Spawn worker threads */
+  GThreadPool *pool = g_thread_pool_new(
+      (GFunc)_simulate_from_queue, NULL, num_of_threads, TRUE, NULL);
+  ASSERT_NOT_NULL(pool,
+                  "cannot create thread pool in simulate_with_single_reader\n");
+
+  for (int i = 0; i < num_of_caches; i++) {
+    sim_queue_worker_params_t *p = malloc(sizeof(sim_queue_worker_params_t));
+    p->queue                  = queues[i];
+    p->cache                  = caches[i];
+    p->result                 = &result[i];
+    p->n_warmup_from_wr       = n_warmup_from_wr;
+    p->n_warmup_req           = n_warmup_req;
+    p->warmup_sec             = warmup_sec;
+    p->free_cache_when_finish = free_cache_when_finish;
+    p->use_random_seed        = use_random_seed;
+    p->progress_mtx           = &progress_mtx;
+    p->progress               = &progress;
+    ASSERT_TRUE(g_thread_pool_push(pool, p, NULL),
+                "cannot push worker in simulate_with_single_reader\n");
+  }
+
+  /* Allocate batch buffer for accumulating requests */
+  request_t *batch = my_malloc_n(request_t, queue_depth);
+
+  /* Process warmup_reader first (if provided) */
+  if (warmup_reader != NULL) {
+    reader_t *wr = clone_reader(warmup_reader);
+    request_t req;
+    
+    while (true) {
+      /* Fill batch buffer */
+      int batch_size = 0;
+      while (batch_size < queue_depth) {
+        read_one_req(wr, &req);
+        if (!req.valid) break;
+        batch[batch_size++] = req;
+      }
+      
+      if (batch_size == 0) break;  /* warmup reader exhausted */
+      
+      /* Wait for all workers to drain (barrier) */
+      for (int i = 0; i < num_of_caches; i++) {
+        sem_wait(&queues[i]->empty_sem);
+      }
+      
+      /* Push batch to all queues */
+      for (int i = 0; i < num_of_caches; i++) {
+        bqueue_push_batch(queues[i], batch, batch_size);
+      }
+      
+      if (batch_size < queue_depth) break;  /* partial batch = EOF */
+    }
+    
+    close_reader(wr);
+  }
+
+  /* Main reader loop — batch-and-barrier pattern */
+  while (true) {
+    /* Phase 1: Fill batch buffer (zero locks) */
+    int batch_size = 0;
+    request_t req;
+    while (batch_size < queue_depth) {
+      read_one_req(reader, &req);
+      if (!req.valid) break;
+      batch[batch_size++] = req;
+    }
+    
+    if (batch_size == 0) break;  /* trace exhausted */
+    
+    /* Phase 2: Wait for all queues to drain (barrier synchronization) */
+    for (int i = 0; i < num_of_caches; i++) {
+      sem_wait(&queues[i]->empty_sem);
+    }
+    
+    /* Phase 3: Push batch to each queue sequentially, signal each worker */
+    for (int i = 0; i < num_of_caches; i++) {
+      bqueue_push_batch(queues[i], batch, batch_size);
+    }
+    
+    if (batch_size < queue_depth) break;  /* partial batch = EOF */
+  }
+
+  /* Signal EOF: wait for final drain, then close all queues */
+  for (int i = 0; i < num_of_caches; i++) {
+    sem_wait(&queues[i]->empty_sem);
+    bqueue_close(queues[i]);
+  }
+
+  /* Block until all workers finish */
+  g_thread_pool_free(pool, FALSE, TRUE);
+  g_mutex_clear(&progress_mtx);
+
+  /* Destroy queues and batch buffer */
+  for (int i = 0; i < num_of_caches; i++) {
+    bqueue_destroy(queues[i]);
+  }
+  my_free(sizeof(bounded_queue_t *) * num_of_caches, queues);
+  my_free(sizeof(request_t) * queue_depth, batch);
+
+  return result;
+}
+
+/**
+ * @brief MRC sweep using simulate_with_single_reader.
+ *
+ * Equivalent to simulate_at_multi_sizes but reads the trace only once.
+ */
+cache_stat_t *simulate_at_multi_sizes_single_reader(
+    reader_t *reader, const cache_t *cache, int num_of_sizes,
+    const uint64_t *cache_sizes, reader_t *warmup_reader, double warmup_frac,
+    int warmup_sec, int num_of_threads, int queue_depth, bool use_random_seed) {
+  cache_t **sized_caches = my_malloc_n(cache_t *, num_of_sizes);
+  for (int i = 0; i < num_of_sizes; i++) {
+    sized_caches[i] = create_cache_with_new_size(cache, cache_sizes[i]);
+  }
+
+  char start_str[64], end_str[64];
+  convert_size_to_str(cache_sizes[0], start_str, 64);
+  convert_size_to_str(cache_sizes[num_of_sizes - 1], end_str, 64);
+  INFO(
+      "%s single-reader MRC, start %s end %s, %d sizes, %d threads, "
+      "queue depth %d\n",
+      cache->cache_name, start_str, end_str, num_of_sizes, num_of_threads,
+      queue_depth > 0 ? queue_depth : BQUEUE_DEFAULT_DEPTH);
+
+  /* simulate_with_single_reader allocates and returns the result array;
+   * caches are freed by workers (free_cache_when_finish = true) */
+  cache_stat_t *result = simulate_with_single_reader(
+      reader, sized_caches, num_of_sizes, warmup_reader, warmup_frac,
+      warmup_sec, num_of_threads, queue_depth, true, use_random_seed);
+
+  my_free(sizeof(cache_t *) * num_of_sizes, sized_caches);
   return result;
 }
 
