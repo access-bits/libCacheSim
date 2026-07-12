@@ -31,7 +31,7 @@ extern "C" {
  * Memory bounded at O(num_caches * queue_depth * sizeof(request_t)).
  * ================================================================ */
 
-#define BQUEUE_DEFAULT_DEPTH 1024
+#define BQUEUE_DEFAULT_DEPTH 1000
 
 typedef struct {
   request_t *buf;        /* ring buffer; stores request_t by value */
@@ -162,6 +162,7 @@ typedef struct {
   cache_stat_t    *result;
   uint64_t         n_warmup_req;     /* count-based warmup from main reader */
   int              warmup_sec;       /* time-based warmup from main reader */
+  uint64_t         report_interval;  /* print stats every N requests (0 = disabled) */
   bool             free_cache_when_finish;
   bool             use_random_seed;
   GMutex          *progress_mtx;
@@ -191,6 +192,8 @@ static void _simulate_from_queue(gpointer data, gpointer user_data) {
 
   uint64_t consumed = 0;
   int64_t  start_ts = INT64_MIN;
+  uint64_t last_report_req = 0;
+  uint64_t last_report_miss = 0;
 
   /* Batch-and-barrier loop: wait for batch → process from queue buffer */
   while (true) {
@@ -204,6 +207,41 @@ static void _simulate_from_queue(gpointer data, gpointer user_data) {
     
     if (processed == 0) {
       break;  /* EOF reached */
+    }
+
+    /* Periodic reporting: print stats every report_interval measured requests */
+    if (p->report_interval > 0 &&
+        result->n_req - last_report_req >= p->report_interval) {
+      /* Calculate cumulative stats */
+      uint64_t cumulative_miss = result->n_miss;
+      uint64_t cumulative_hit = result->n_req - cumulative_miss;
+      double cumulative_miss_ratio = result->n_req > 0
+                     ? 100.0 * (double)cumulative_miss / (double)result->n_req
+                     : 0.0;
+      
+      /* Calculate interval stats (hits/misses in this reporting interval) */
+      uint64_t interval_req = result->n_req - last_report_req;
+      uint64_t interval_miss = result->n_miss - last_report_miss;
+      uint64_t interval_hit = interval_req - interval_miss;
+      double interval_miss_ratio = interval_req > 0
+                                       ? 100.0 * (double)interval_miss / (double)interval_req
+                                       : 0.0;
+      
+      last_report_req = result->n_req;
+      last_report_miss = result->n_miss;
+      
+      LOG(INFO, p->config_stream,
+          "[%s] Total: %.1fM requests, cumulative %lu hits, %lu misses, miss ratio %.2f%% | "
+          "Interval: %lu requests, %lu hits, %lu misses, miss ratio %.2f%%",
+          cache->cache_name,
+          (double)result->n_req / 1e6,
+          (unsigned long)cumulative_hit,
+          (unsigned long)cumulative_miss,
+          cumulative_miss_ratio,
+          (unsigned long)interval_req,
+          (unsigned long)interval_hit,
+          (unsigned long)interval_miss,
+          interval_miss_ratio);
     }
   }
 
@@ -295,6 +333,7 @@ cache_stat_t *simulate_with_config_list(
     p->result                 = &result[i];
     p->n_warmup_req           = n_warmup_req;
     p->warmup_sec             = configs[i].warmup_sec;
+    p->report_interval        = global_cfg->report_interval;
     p->free_cache_when_finish = true;
     p->use_random_seed        = true;
     p->progress_mtx           = &progress_mtx;

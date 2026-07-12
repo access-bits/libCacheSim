@@ -374,7 +374,7 @@ void mrc_profiler_params_parse(const char *cache_algorithm_str,
       strcmp(profiler_str, "shards") == 0) {
     profiler_type = mrcProfiler::SHARDS_PROFILER;
     if (strcmp(cache_algorithm_str, "LRU")) {
-      ERROR("cache algorithm must be LRU for SHARDS\n")
+      ERROR("cache algorithm must be LRU for SHARDS\n");
       exit(1);
     }
 

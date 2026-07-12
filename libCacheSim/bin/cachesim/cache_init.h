@@ -2,10 +2,10 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <strings.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "libCacheSim/cache.h"
 #include "libCacheSim/evictionAlgo.h"
@@ -57,6 +57,11 @@ static inline cache_t *create_cache(const char *trace_path,
       {"lirs", LIRS_init},
       {"lru", LRU_init},
       {"lru-prob", LRU_Prob_init},
+      {"lrupebs", LRUpebs_init},
+      {"lruAccessBit", LRUAccessBit_init},
+      {"lruaccessbit", LRUAccessBit_init},
+      {"mglru", MGLRU_init},
+      {"lrutlbfiltered", LRUTLBFiltered_init},
       {"nop", nop_init},
       // plugin cache that allows user to implement custom cache
       {"pluginCache", pluginCache_init},

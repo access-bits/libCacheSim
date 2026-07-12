@@ -29,7 +29,7 @@
  * Constants
  * ----------------------------------------------------------------------- */
 
-#define MAX_STREAMS      128
+#define MAX_STREAMS      256
 #define STREAM_NAME_LEN   64
 #define LOG_LINE_MAX    2048
 

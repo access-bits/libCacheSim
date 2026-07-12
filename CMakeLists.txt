@@ -311,6 +311,7 @@ if(BUILD_SHARED_LIBS)
         $<TARGET_OBJECTS:utils_lib>
         $<TARGET_OBJECTS:traceAnalyzer_lib>
         $<TARGET_OBJECTS:mrcProfiler_lib>
+        $<TARGET_OBJECTS:logger_lib>
     )
 
     target_include_directories(${PROJECT_NAME}_shared INTERFACE

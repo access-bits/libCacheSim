@@ -1,5 +1,5 @@
 
-#include "cachesim/internal.h"
+#include "../../../MRC/mrc_internal.h"
 #include "libCacheSim/cache.h"
 #include "libCacheSim/reader.h"
 #include "utils/include/mymath.h"

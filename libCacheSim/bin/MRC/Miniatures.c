@@ -5,23 +5,29 @@
 #include "libCacheSim/plugin.h"
 #include "libCacheSim/simulator.h"
 #include "mrc_internal.h"
-#include "profiler/simulator.c"
 #include "utils/include/myprint.h"
 #include "utils/include/mystr.h"
 
 cache_stat_t *generate_mini_mrc(struct MINI_arguments *args) {
-  reader_t **readers =
-      my_malloc_n(reader_t *, args->n_cache_size * args->n_eviction_algo);
-  for (int i = 0; i < args->n_cache_size * args->n_eviction_algo; i++) {
-    if (args->cache_size_ratio[i] == 0) {
-      args->cache_size_ratio[i] = args->cache_size_ratio[0];
-    }
-    args->reader->init_params.sampler =
-        create_SHARDS_sampler(args->cache_size_ratio[i]);
-    readers[i] = clone_reader(args->reader);
+  int n_configs = args->n_cache_size * args->n_eviction_algo;
+
+  sim_global_config_t global_cfg;
+  memset(&global_cfg, 0, sizeof(global_cfg));
+  global_cfg.queue_depth = 0;
+  global_cfg.report_interval = (uint64_t)args->report_interval;
+
+  sim_config_t *configs = my_malloc_n(sim_config_t, n_configs);
+  memset(configs, 0, sizeof(sim_config_t) * (size_t)n_configs);
+
+  for (int i = 0; i < n_configs; i++) {
+    configs[i].warmup_sec = args->warmup_sec;
+    configs[i].warmup_frac = 0.0;
+    configs[i].cache_size = args->caches[i]->cache_size;
   }
-  cache_stat_t *result = simulate_with_multi_caches_scaling(
-      readers, args->caches, args->n_cache_size * args->n_eviction_algo, NULL,
-      0, args->warmup_sec, args->n_thread, true);
+
+  cache_stat_t *result = simulate_with_config_list(
+      args->reader, &global_cfg, configs, args->caches, n_configs, NULL);
+
+  my_free(sizeof(sim_config_t) * (size_t)n_configs, configs);
   return result;
 }

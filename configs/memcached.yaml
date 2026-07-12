@@ -1,0 +1,154 @@
+# Example configuration for libCacheSim with mergedTrace reader and new eviction algorithms
+
+trace:
+  # Path to the merged trace file (zstd-compressed, forward chronological)
+  path: /memory_traces/icparsa1/memcached-zipfian/merged-trace.zstd
+  
+  # Trace type: mergedTrace (or "merged")
+  type: mergedTrace
+  
+  # Trace reader parameters (empty for mergedTrace, uses default settings)
+  params: ""
+  
+  # Maximum number of requests to process; -1 means all requests
+  num_req: -1
+  
+  # Object sampling ratio: 1.0 = no sampling, 0.01 = sample 1%
+  sample_ratio: 1.0
+
+# Global settings
+global:
+  # Report statistics every N requests (default: every 10M)
+  report_interval: 4194304
+
+  # Per-simulator request queue depth
+  queue_depth: 32768
+  
+  # Ignore object sizes (mergedTrace treats all objects as size 1)
+  ignore_obj_size: true
+  
+  # Don't track per-object metadata size
+  consider_obj_metadata: false
+  
+  # Verbose output
+  verbose: true
+  
+  # Print first few requests
+  print_head_req: true
+
+# Output configuration
+output:
+  # Results file
+  path: /memory_traces/icparsa1/memcached-zipfian/logs/cachesim_results.txt
+
+# Logging configuration (optional)
+logging:
+  # Log directory
+  dir: /memory_traces/icparsa1/memcached-zipfian/logs
+
+  # Minimum log level: DEBUG, INFO, WARN, ERROR
+  level: INFO
+
+  # Streams: ALL or comma-separated stream names
+  streams: ALL
+
+# List of cache configurations to test
+configurations: 
+
+  # Standard LRU for baseline comparison
+  - policy: LRU
+    cache_size: 855820
+
+  # cache_size = round(2454645 * x), x in [0.30, 0.95], step 0.05
+
+  # ARC
+  - policy: ARC
+    cache_size: 641865
+  - policy: ARC
+    cache_size: 748842
+  - policy: ARC
+    cache_size: 855820
+  - policy: ARC
+    cache_size: 962797
+  - policy: ARC
+    cache_size: 1069775
+  - policy: ARC
+    cache_size: 1176753
+  - policy: ARC
+    cache_size: 1283730
+  - policy: ARC
+    cache_size: 1390708
+  - policy: ARC
+    cache_size: 1497685
+  - policy: ARC
+    cache_size: 1604663
+  - policy: ARC
+    cache_size: 1711640
+  - policy: ARC
+    cache_size: 1818618
+  - policy: ARC
+    cache_size: 1925595
+  - policy: ARC
+    cache_size: 2032573
+
+  # CLOCK
+  - policy: CLOCK
+    cache_size: 641865
+  - policy: CLOCK
+    cache_size: 748842
+  - policy: CLOCK
+    cache_size: 855820
+  - policy: CLOCK
+    cache_size: 962797
+  - policy: CLOCK
+    cache_size: 1069775
+  - policy: CLOCK
+    cache_size: 1176753
+  - policy: CLOCK
+    cache_size: 1283730
+  - policy: CLOCK
+    cache_size: 1390708
+  - policy: CLOCK
+    cache_size: 1497685
+  - policy: CLOCK
+    cache_size: 1604663
+  - policy: CLOCK
+    cache_size: 1711640
+  - policy: CLOCK
+    cache_size: 1818618
+  - policy: CLOCK
+    cache_size: 1925595
+  - policy: CLOCK
+    cache_size: 2032573
+
+  # CLOCKPRO
+  - policy: CLOCKPRO
+    cache_size: 641865
+  - policy: CLOCKPRO
+    cache_size: 748842
+  - policy: CLOCKPRO
+    cache_size: 855820
+  - policy: CLOCKPRO
+    cache_size: 962797
+  - policy: CLOCKPRO
+    cache_size: 1069775
+  - policy: CLOCKPRO
+    cache_size: 1176753
+  - policy: CLOCKPRO
+    cache_size: 1283730
+  - policy: CLOCKPRO
+    cache_size: 1390708
+  - policy: CLOCKPRO
+    cache_size: 1497685
+  - policy: CLOCKPRO
+    cache_size: 1604663
+  - policy: CLOCKPRO
+    cache_size: 1711640
+  - policy: CLOCKPRO
+    cache_size: 1818618
+  - policy: CLOCKPRO
+    cache_size: 1925595
+  - policy: CLOCKPRO
+    cache_size: 2032573
+
+

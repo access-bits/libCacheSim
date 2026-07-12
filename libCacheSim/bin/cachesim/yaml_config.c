@@ -154,6 +154,8 @@ static void parse_global_section(yaml_parser_t *parser, yaml_event_t *ev,
       g->verbose = parse_bool(val);
     } else if (strcmp(key, "print_head_req") == 0) {
       g->print_head_req = parse_bool(val);
+    } else if (strcmp(key, "report_interval") == 0) {
+      g->report_interval = (uint64_t)strtoull(val, NULL, 10);
     }
   }
 }
@@ -391,10 +393,8 @@ void parse_yaml_config(const char *path, sim_global_config_t *gcfg,
   if (gcfg->output_path[0] == '\0') {
     const char *base = strrchr(gcfg->trace_path, '/');
     base = (base != NULL) ? base + 1 : gcfg->trace_path;
-    /* Clamp base to leave room for "result/" (7) + ".cachesim" (9) + NUL (1) */
-    char base_buf[SIM_PATH_MAX - 17];
-    snprintf(base_buf, sizeof(base_buf), "%s", base);
-    snprintf(gcfg->output_path, sizeof(gcfg->output_path), "result/%s.cachesim",
-             base_buf);
+    /* Limit base name to ensure output fits: 512 - "result/" (7) - ".cachesim" (9) - NUL (1) = 495 */
+    snprintf(gcfg->output_path, sizeof(gcfg->output_path), "result/%.495s.cachesim",
+             base);
   }
 }

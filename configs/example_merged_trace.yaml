@@ -1,0 +1,80 @@
+# Example configuration for libCacheSim with mergedTrace reader and new eviction algorithms
+
+trace:
+  # Path to the merged trace file (zstd-compressed, forward chronological)
+  path: /path/to/your/trace.merged.zst
+  
+  # Trace type: mergedTrace (or "merged")
+  type: mergedTrace
+  
+  # Trace reader parameters (empty for mergedTrace, uses default settings)
+  params: ""
+  
+  # Maximum number of requests to process; -1 means all requests
+  num_req: -1
+  
+  # Object sampling ratio: 1.0 = no sampling, 0.01 = sample 1%
+  sample_ratio: 1.0
+
+# Global settings
+global:
+  # Ignore object sizes (mergedTrace treats all objects as size 1)
+  ignore_obj_size: true
+  
+  # Don't track per-object metadata size
+  consider_obj_metadata: false
+  
+  # Verbose output
+  verbose: true
+  
+  # Print first few requests
+  print_head_req: true
+
+# Output configuration
+output:
+  # Results file
+  path: result/cachesim_results.txt
+
+# Logging configuration (optional)
+logging:
+  # Log directory
+  dir: ./logs
+
+  # Minimum log level: DEBUG, INFO, WARN, ERROR
+  level: INFO
+
+  # Streams: ALL or comma-separated stream names
+  streams: ALL
+
+# List of cache configurations to test
+configurations:
+  # LruCoarse: coarse-grained LRU with per-CPU TLB simulation
+  # Requires a mergedTrace with cpu_id field
+  - policy: lruCoarse
+    cache_size: 100MB
+    warmup_frac: 0.1
+    eviction_params: "sampling-period=1000"
+  
+  # LruCoarseRandom: coarse-grained LRU with O(1) random eviction
+  # Also requires mergedTrace
+  - policy: lruCoarseRandom
+    cache_size: 100MB
+    warmup_frac: 0.1
+    eviction_params: "sampling-period=1000,random-seed=42"
+  
+  # LruLruTlbFiltered: LRU with per-CPU TLB filtering
+  # Recency only updated on TLB miss; evictions invalidate TLBs
+  - policy: lruLruTlbFiltered
+    cache_size: 100MB
+    warmup_frac: 0.1
+  
+  # Standard LRU for baseline comparison
+  - policy: LRU
+    cache_size: 100MB
+    warmup_frac: 0.1
+
+# Cache size format:
+#   Bytes:      12345
+#   Kilobytes:  100KB
+#   Megabytes:  100MB
+#   Gigabytes:  1GB

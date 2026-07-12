@@ -1,0 +1,375 @@
+# Auto-generated config: memcached + LRUAccessBit parameter sweep
+
+trace:
+  path: /memory_traces/icparsa1/memcached-zipfian/merged-trace.zstd
+  type: mergedTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 4194304
+  queue_depth: 32768
+  ignore_obj_size: true
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/memcached-zipfian/hw-os-contract-logs/cachesim_results_memcached_accessbit.txt
+
+logging:
+  dir: /memory_traces/icparsa1/memcached-zipfian/hw-os-contract-logs
+  level: INFO
+  streams: ALL
+
+configurations:
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=4096"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=65536"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=262144"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=1048576"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=4194304"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=16777216"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=67108864"
+  - policy: lruAccessBit
+    cache_size: 641865
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 748842
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 855820
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 962797
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1069775
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1176753
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1283730
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1390708
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1497685
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1604663
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1711640
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1818618
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 1925595
+    eviction_params: "sampling_period=268435456"
+
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=4096"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=65536"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=262144"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=1048576"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=4194304"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=16777216"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=67108864"
+  - policy: lruaccessbit
+    cache_size: 2032573
+    eviction_params: "sampling_period=268435456"

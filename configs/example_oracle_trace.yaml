@@ -1,0 +1,65 @@
+# Example configuration for libCacheSim with oracleGeneralCompressedReverse trace
+
+trace:
+  # Path to the oracle trace file (zstd-compressed, reverse chronological)
+  # Must include the .meta file in the same directory
+  path: /path/to/your/trace.oracle.zst
+  
+  # Trace type: oracleGeneralCompressedReverse
+  type: oracleGeneralCompressedReverse
+  
+  # Trace reader parameters (empty for oracle traces, uses default settings)
+  params: ""
+  
+  # Maximum number of requests to process; -1 means all requests
+  num_req: -1
+  
+  # Object sampling ratio: 1.0 = no sampling
+  sample_ratio: 1.0
+
+# Global settings
+global:
+  # Ignore object sizes (optional for oracle traces)
+  ignore_obj_size: false
+  
+  # Don't track per-object metadata size
+  consider_obj_metadata: false
+  
+  # Verbose output
+  verbose: true
+  
+  # Print first few requests
+  print_head_req: true
+
+# Output configuration
+output:
+  # Results file
+  path: result/cachesim_oracle_results.txt
+
+# Logging configuration (optional)
+logging:
+  # Log directory
+  dir: ./logs
+
+  # Minimum log level: DEBUG, INFO, WARN, ERROR
+  level: INFO
+
+  # Streams
+  streams: ALL
+
+# Cache configurations for oracle trace
+configurations:
+  # Belady optimal cache (uses next_access_vtime from oracle trace)
+  - policy: Belady
+    cache_size: 100MB
+    warmup_frac: 0.1
+  
+  # Standard LRU for comparison
+  - policy: LRU
+    cache_size: 100MB
+    warmup_frac: 0.1
+  
+  # LFU with oracle information
+  - policy: LFU
+    cache_size: 100MB
+    warmup_frac: 0.1

@@ -1,0 +1,249 @@
+# Auto-generated config: tpch-sparksql + LRUpebs parameter sweep
+
+trace:
+  path: /memory_traces/icparsa1/tpch-sparksql/merged-trace.zstd
+  type: mergedTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 4194304
+  queue_depth: 32768
+  ignore_obj_size: true
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/tpch-sparksql/hw-os-contract-logs/cachesim_results_tpch_sparksql_pebs.txt
+
+logging:
+  dir: /memory_traces/icparsa1/tpch-sparksql/hw-os-contract-logs
+  level: INFO
+  streams: ALL
+
+configurations:
+  - policy: lrupebs
+    cache_size: 683505
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 683505
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 683505
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 683505
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 683505
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 797423
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 797423
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 797423
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 797423
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 797423
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 911340
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 911340
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 911340
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 911340
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 911340
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1025258
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1025258
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1025258
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1025258
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1025258
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1139176
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1139176
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1139176
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1139176
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1139176
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1253093
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1253093
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1253093
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1253093
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1253093
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1367011
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1367011
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1367011
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1367011
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1367011
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1480928
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1480928
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1480928
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1480928
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1480928
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1594846
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1594846
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1594846
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1594846
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1594846
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1708764
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1708764
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1708764
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1708764
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1708764
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1822681
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1822681
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1822681
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1822681
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1822681
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 1936599
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 1936599
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 1936599
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 1936599
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 1936599
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 2050516
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 2050516
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 2050516
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 2050516
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 2050516
+    eviction_params: "sampling_period=100000"
+
+  - policy: lrupebs
+    cache_size: 2164434
+    eviction_params: "sampling_period=10000"
+  - policy: lrupebs
+    cache_size: 2164434
+    eviction_params: "sampling_period=20000"
+  - policy: lrupebs
+    cache_size: 2164434
+    eviction_params: "sampling_period=40000"
+  - policy: lrupebs
+    cache_size: 2164434
+    eviction_params: "sampling_period=80000"
+  - policy: lrupebs
+    cache_size: 2164434
+    eviction_params: "sampling_period=100000"

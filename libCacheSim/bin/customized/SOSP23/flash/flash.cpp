@@ -114,8 +114,8 @@ void calWriteAmp(reader_t *reader, cache_t *cache) {
 }
 
 int main(int argc, char *argv[]) {
-  struct arguments args;
-  parse_cmd(argc, argv, &args);
+  struct MINI_arguments args;
+  parse_mini_cmd(argc, argv, &args);
   if (args.n_cache_size != 1) {
     WARN("only support one cache size\n");
     exit(0);

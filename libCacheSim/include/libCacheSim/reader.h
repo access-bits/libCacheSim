@@ -76,6 +76,9 @@ typedef struct {
 
   // sample some requests in the trace
   sampler_t *sampler;
+
+  // right-shift obj_id by this many bits before handing request to simulator
+  uint8_t page_shift;
 } reader_init_param_t;
 
 enum read_direction {
@@ -169,6 +172,7 @@ static inline void set_default_reader_init_params(reader_init_param_t *params) {
   params->binary_fmt_str = NULL;
 
   params->sampler = NULL;
+  params->page_shift = 0;
 }
 
 static inline reader_init_param_t default_reader_init_params(void) {

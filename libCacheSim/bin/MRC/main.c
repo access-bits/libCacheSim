@@ -5,7 +5,6 @@
 #include <libgen.h>
 #include <unistd.h>
 
-#include "../cachesim/internal.h"
 #include "libCacheSim/sampling.h"
 #include "mrc_internal.h"
 

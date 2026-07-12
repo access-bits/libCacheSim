@@ -143,6 +143,11 @@ typedef struct {
   int32_t freq;
 } __attribute__((packed)) Sieve_obj_params_t;
 
+typedef struct {
+  void *bucket;      // LruCoarseBucket* — back-pointer to the bucket this obj lives in
+  int32_t bucket_idx; // index of this obj within the bucket's pages array
+} LruCoarse_obj_metadata_t;
+
 // ############################## cache obj ###################################
 struct cache_obj;
 typedef struct cache_obj {
@@ -188,6 +193,7 @@ typedef struct cache_obj {
     S3FIFO_obj_metadata_t S3FIFO;
     Sieve_obj_params_t sieve;
     CAR_obj_metadata_t CAR;
+    LruCoarse_obj_metadata_t LruCoarse;
 
 #if defined(ENABLE_GLCACHE) && ENABLE_GLCACHE == 1
     GLCache_obj_metadata_t GLCache;

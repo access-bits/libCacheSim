@@ -9,7 +9,9 @@
 #include <ctype.h>
 
 #include "customizedReader/lcs.h"
+#include "customizedReader/mergedTrace.h"
 #include "customizedReader/oracle/oracleGeneralBin.h"
+#include "customizedReader/oracle/oracleGeneralCompressedReverse.h"
 #include "customizedReader/oracle/oracleTwrBin.h"
 #include "customizedReader/oracle/oracleTwrNSBin.h"
 #include "customizedReader/twrBin.h"
@@ -189,12 +191,20 @@ reader_t *setup_reader(const char *const trace_path,
     case VALPIN_TRACE:
       valpinReader_setup(reader);
       break;
+    case MERGED_TRACE:
+      mergedTrace_setup(reader);
+      break;
+    case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
+      oracleGeneralCompressedReverse_setup(reader);
+      break;
     default:
       LOG(ERROR, STREAM_Reader, "cannot recognize trace type: %c\n", reader->trace_type);
       abort();
   }
 
-  if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file) {
+  if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file
+      && reader->trace_type != MERGED_TRACE
+      && reader->trace_type != ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
     ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
     if (data_region_size % reader->item_size != 0) {
       LOG(WARN, STREAM_Reader, 
@@ -301,6 +311,12 @@ int read_one_req(reader_t *const reader, request_t *const req) {
       case VALPIN_TRACE:
         status = valpin_read_one_req(reader, req);
         break;
+      case MERGED_TRACE:
+        status = mergedTrace_read_one_req(reader, req);
+        break;
+      case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
+        status = oracleGeneralCompressedReverse_read_one_req(reader, req);
+        break;
       default:
         LOG(ERROR, STREAM_Reader, 
             "cannot recognize reader trace_type, given reader trace_type: "
@@ -333,6 +349,10 @@ int read_one_req(reader_t *const reader, request_t *const req) {
 
   if (reader->ignore_obj_size) {
     req->obj_size = 1;
+  }
+
+  if (reader->init_params.page_shift > 0) {
+    req->obj_id = req->obj_id >> reader->init_params.page_shift;
   }
 
   if (reader->init_params.obj_cost_field <= 0) {
@@ -579,6 +599,10 @@ int close_reader(reader_t *const reader) {
     if (reader->init_params.binary_fmt_str != NULL) {
       free(reader->init_params.binary_fmt_str);
     }
+  } else if (reader->trace_type == MERGED_TRACE) {
+    mergedTrace_teardown(reader);
+  } else if (reader->trace_type == ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
+    oracleGeneralCompressedReverse_teardown(reader);
   }
 
 #ifdef SUPPORT_ZSTD_TRACE

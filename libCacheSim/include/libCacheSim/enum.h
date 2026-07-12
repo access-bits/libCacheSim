@@ -42,6 +42,9 @@ typedef enum {
 
   VALPIN_TRACE,
 
+  MERGED_TRACE,
+  ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE,
+
   UNKNOWN_TRACE,
 } __attribute__((__packed__)) trace_type_e;
 
@@ -62,6 +65,8 @@ static const char* const g_trace_type_name[UNKNOWN_TRACE + 2] = {
     "ORACLE_SYS_TWRNS_TRACE",
 
     "VALPIN_TRACE",
+    "MERGED_TRACE",
+    "ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE",
     "UNKNOWN_TRACE",
 };
 

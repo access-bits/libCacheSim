@@ -57,6 +57,10 @@ set(eviction_sources_c
         eviction/SLRUv0.c        # an inefficient version but easier to understand
         eviction/TwoQ.c
         eviction/WTinyLFU.c
+        eviction/LRUAccessBit.c
+        eviction/LRUTLBFiltered.c
+        eviction/MGLRU.c
+        eviction/LRUpebs.c
 
         # these are sub-algorithms used by other algorithms
         eviction/CR_LFU.c

@@ -13,4 +13,4 @@ target_include_directories(fast23 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${libCacheSim_include_dir}
 )
-target_link_libraries(fast23 dataStructure_lib traceReader_lib ${Boost_LIBRARIES})
+target_link_libraries(fast23 ${PROJECT_NAME} ${Boost_LIBRARIES} ${dependency_libs})

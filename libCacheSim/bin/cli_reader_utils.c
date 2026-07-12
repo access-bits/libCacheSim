@@ -52,6 +52,11 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
     return ORACLE_SYS_TWRNS_TRACE;
   } else if (strcasecmp(trace_type_str, "valpinTrace") == 0) {
     return VALPIN_TRACE;
+  } else if (strcasecmp(trace_type_str, "mergedTrace") == 0 ||
+             strcasecmp(trace_type_str, "merged") == 0) {
+    return MERGED_TRACE;
+  } else if (strcasecmp(trace_type_str, "oracleGeneralCompressedReverse") == 0) {
+    return ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE;
   } else {
     LOG(ERROR, STREAM_Reader, "unsupported trace type: %s\n", trace_type_str);
     abort();
@@ -154,6 +159,14 @@ void parse_reader_params(const char *reader_params_str,
       params->obj_id_is_num = is_true(value);
     } else if (strcasecmp(key, "block-size") == 0) {
       params->block_size = (int)(strtol(value, &end, 0));
+    } else if (strcasecmp(key, "page-shift") == 0) {
+      long shift = strtol(value, &end, 0);
+      if (strlen(end) > 2 || shift < 0 || shift > 63) {
+        LOG(ERROR, STREAM_Reader,
+            "Invalid page-shift '%s', expected integer in [0,63]\n", value);
+        abort();
+      }
+      params->page_shift = (uint8_t)shift;
     } else if (strcasecmp(key, "header") == 0 ||
                strcasecmp(key, "has-header") == 0) {
       params->has_header = is_true(value);

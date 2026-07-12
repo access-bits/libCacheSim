@@ -59,6 +59,8 @@ typedef struct {
   bool    verbose;
   bool    print_head_req;
 
+  uint64_t report_interval;          /* print per-worker stats every N requests (0 = disabled) */
+
   char    output_path[SIM_PATH_MAX];  /* output file path */
 
   /* Logging — all fields are optional; empty log_dir falls back to stderr */
