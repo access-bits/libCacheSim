@@ -46,6 +46,9 @@ enum argp_option_short {
   OPTION_PREFETCH_ALGO = 'p',
   OPTION_PREFETCH_PARAMS = 0x109,
   OPTION_PRINT_HEAD_REQ = 0x10a,
+  OPTION_ENABLE_HEATMAP = 0x10b,
+  OPTION_HEATMAP_INTERVAL = 0x10c,
+  OPTION_HEATMAP_OUTPUT = 0x10d,
 };
 
 /*
@@ -94,6 +97,12 @@ static struct argp_option options[] = {
     {"verbose", OPTION_VERBOSE, "1", 0, "Produce verbose output", 10},
     {"print-head-req", OPTION_PRINT_HEAD_REQ, "false", 0,
      "Print the first few requests", 10},
+    {"enable-heatmap", OPTION_ENABLE_HEATMAP, "false", 0,
+     "Enable per-object heatmap generation", 10},
+    {"heatmap-interval", OPTION_HEATMAP_INTERVAL, "1000000", 0,
+     "Dump heatmap every N accesses", 10},
+    {"heatmap-output", OPTION_HEATMAP_OUTPUT, "", 0,
+     "Heatmap output file path", 10},
 
     {0, 0, 0, 0, 0, 0}};
 
@@ -169,6 +178,16 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     case OPTION_PRINT_HEAD_REQ:
       arguments->print_head_req = is_true(arg) ? true : false;
       break;
+    case OPTION_ENABLE_HEATMAP:
+      arguments->enable_heatmap = is_true(arg) ? true : false;
+      break;
+    case OPTION_HEATMAP_INTERVAL:
+      arguments->heatmap_interval = atoll(arg);
+      break;
+    case OPTION_HEATMAP_OUTPUT:
+      strncpy(arguments->heatmap_ofilepath, arg, OFILEPATH_LEN - 1);
+      arguments->heatmap_ofilepath[OFILEPATH_LEN - 1] = '\0';
+      break;
     case ARGP_KEY_ARG:
       if (state->arg_num >= N_ARGS) {
         printf("found too many arguments, current %s\n", arg);
@@ -233,6 +252,9 @@ static void init_arg(struct arguments *args) {
   args->n_req = -1;
   args->sample_ratio = 1.0;
   args->print_head_req = true;
+  args->enable_heatmap = false;
+  args->heatmap_interval = 1000000;
+  memset(args->heatmap_ofilepath, 0, OFILEPATH_LEN);
 
   for (int i = 0; i < N_MAX_ALGO; i++) {
     args->eviction_algo[i] = NULL;
@@ -298,6 +320,11 @@ void parse_cmd(int argc, char *argv[], struct arguments *args) {
     char *trace_filename = rindex(args->trace_path, '/');
     snprintf(args->ofilepath, OFILEPATH_LEN, "result/%s.cachesim",
              trace_filename == NULL ? args->trace_path : trace_filename + 1);
+  }
+
+  if (args->enable_heatmap && args->heatmap_ofilepath[0] == '\0') {
+    snprintf(args->heatmap_ofilepath, OFILEPATH_LEN, "%s.heatmap.json",
+             args->ofilepath);
   }
 
   /* convert trace type string to enum */

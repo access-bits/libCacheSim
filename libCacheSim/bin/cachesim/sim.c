@@ -3,10 +3,61 @@
 #include "utils/include/mymath.h"
 #include "utils/include/mystr.h"
 #include "utils/include/mysys.h"
+#include <glib.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Heatmap data structure to track per-object statistics */
+typedef struct {
+  uint64_t access_count;
+  uint64_t miss_count;
+} heatmap_obj_stat_t;
+
+/**
+ * @brief Flush one heatmap interval to the output file
+ * @param f Output file handle
+ * @param ht GHashTable mapping obj_id to heatmap_obj_stat_t*
+ * @param access_start First request count of this interval
+ * @param access_end Last request count of this interval
+ * @param first Pointer to bool tracking if this is the first interval; will be set to false
+ */
+static void flush_heatmap_interval(FILE *f, GHashTable *ht, uint64_t access_start,
+                                    uint64_t access_end, bool *first) {
+  if (!*first) {
+    fprintf(f, ",\n");
+  }
+  *first = false;
+
+  fprintf(f, "  {\n");
+  fprintf(f, "    \"access_start\": %lu,\n", access_start);
+  fprintf(f, "    \"access_end\": %lu,\n", access_end);
+  fprintf(f, "    \"objects\": {\n");
+
+  GHashTableIter iter;
+  gpointer key, value;
+  g_hash_table_iter_init(&iter, ht);
+  bool first_obj = true;
+
+  while (g_hash_table_iter_next(&iter, &key, &value)) {
+    uint64_t obj_id = (uint64_t)(uintptr_t)key;
+    heatmap_obj_stat_t *stat = (heatmap_obj_stat_t *)value;
+
+    if (!first_obj) {
+      fprintf(f, ",\n");
+    }
+    first_obj = false;
+
+    fprintf(f, "      \"%lu\": {\"access_count\": %lu, \"miss_count\": %lu}",
+            obj_id, stat->access_count, stat->miss_count);
+  }
+
+  fprintf(f, "\n    }\n");
+  fprintf(f, "  }");
+
+  g_hash_table_remove_all(ht);
+}
 
 void print_head_requests(request_t *req, uint64_t req_cnt) {
   if (req_cnt < 2) {
@@ -16,7 +67,8 @@ void print_head_requests(request_t *req, uint64_t req_cnt) {
 
 void simulate(reader_t *reader, cache_t *cache, int report_interval,
               int warmup_sec, char *ofilepath, bool ignore_obj_size,
-              bool print_head_req) {
+              bool print_head_req, bool enable_heatmap, uint64_t heatmap_interval,
+              char *heatmap_ofilepath) {
   /* random seed */
   srand(time(NULL));
   set_rand_seed(rand());
@@ -35,6 +87,34 @@ void simulate(reader_t *reader, cache_t *cache, int report_interval,
   generate_cache_name(cache, detailed_cache_name, 256);
 
   double start_time = -1;
+
+  /* Heatmap variables */
+  GHashTable *heatmap_ht = NULL;
+  FILE *heatmap_file = NULL;
+  bool heatmap_first = true;
+  uint64_t heatmap_next_flush = heatmap_interval;
+  uint64_t heatmap_access_start = 0;
+
+  if (enable_heatmap) {
+    /* Create directory if it doesn't exist */
+    char *heatmap_dir = rindex(heatmap_ofilepath, '/');
+    if (heatmap_dir != NULL) {
+      size_t dir_length = heatmap_dir - heatmap_ofilepath;
+      char dir_path[1024];
+      snprintf(dir_path, dir_length + 1, "%s", heatmap_ofilepath);
+      create_dir(dir_path);
+    }
+
+    heatmap_file = fopen(heatmap_ofilepath, "w");
+    if (heatmap_file == NULL) {
+      ERROR("cannot open heatmap file %s %s\n", heatmap_ofilepath, strerror(errno));
+      exit(1);
+    }
+    fprintf(heatmap_file, "[\n");
+
+    heatmap_ht = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, g_free);
+  }
+
   while (req->valid) {
     if (print_head_req) {
       print_head_requests(req, req_cnt);
@@ -54,11 +134,37 @@ void simulate(reader_t *reader, cache_t *cache, int report_interval,
     req_cnt++;
     req_byte += req->obj_size;
     req_cost += req->obj_cost;
-    if (cache->get(cache, req) == false) {
+    bool is_miss = cache->get(cache, req) == false;
+    if (is_miss) {
       miss_cnt++;
       miss_byte += req->obj_size;
       miss_cost += req->obj_cost;
     }
+
+    /* Track heatmap statistics */
+    if (enable_heatmap) {
+      gpointer obj_key = (gpointer)(uintptr_t)req->obj_id;
+      heatmap_obj_stat_t *obj_stat = g_hash_table_lookup(heatmap_ht, obj_key);
+      if (obj_stat == NULL) {
+        obj_stat = g_malloc(sizeof(heatmap_obj_stat_t));
+        obj_stat->access_count = 0;
+        obj_stat->miss_count = 0;
+        g_hash_table_insert(heatmap_ht, obj_key, obj_stat);
+      }
+      obj_stat->access_count++;
+      if (is_miss) {
+        obj_stat->miss_count++;
+      }
+
+      /* Check if we need to flush this interval */
+      if (req_cnt >= heatmap_next_flush) {
+        flush_heatmap_interval(heatmap_file, heatmap_ht, heatmap_access_start,
+                               req_cnt, &heatmap_first);
+        heatmap_access_start = req_cnt;
+        heatmap_next_flush = req_cnt + heatmap_interval;
+      }
+    }
+
     if (req->clock_time - last_report_ts >= (uint64_t)report_interval &&
         req->clock_time != 0) {
       INFO(
@@ -76,6 +182,19 @@ void simulate(reader_t *reader, cache_t *cache, int report_interval,
     }
 
     read_one_req(reader, req);
+  }
+
+  /* Flush last partial heatmap interval if there are any objects */
+  if (enable_heatmap && g_hash_table_size(heatmap_ht) > 0) {
+    flush_heatmap_interval(heatmap_file, heatmap_ht, heatmap_access_start, req_cnt,
+                           &heatmap_first);
+  }
+
+  /* Close and cleanup heatmap resources */
+  if (enable_heatmap) {
+    fprintf(heatmap_file, "\n]\n");
+    fclose(heatmap_file);
+    g_hash_table_destroy(heatmap_ht);
   }
 
   double runtime = gettime() - start_time;
