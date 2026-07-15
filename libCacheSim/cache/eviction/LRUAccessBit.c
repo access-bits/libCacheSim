@@ -37,6 +37,14 @@ extern "C" {
 #define LRUACCESSBIT_DEFAULT_TLB_WAYS      4U
 #define LRUACCESSBIT_DEFAULT_TLB_NUM_CPUS  4U
 #define LRUACCESSBIT_DEFAULT_REPORT_INTERVAL  10000000UL  /* print stats every 10M */
+#define LRUACCESSBIT_CPU_FEATURE_IDX       0
+
+static inline uint32_t lruaccessbit_get_cpu_feature(const request_t *req) {
+  if (req->n_features <= LRUACCESSBIT_CPU_FEATURE_IDX) {
+    return 0;
+  }
+  return (uint32_t)(uint8_t)req->features[LRUACCESSBIT_CPU_FEATURE_IDX];
+}
 
 /* =====================================================================
  * Data structures
@@ -460,7 +468,7 @@ static bool LRUAccessBit_get(cache_t *cache, const request_t *req) {
   }
 
   /* ---- TLB simulation ---- */
-  uint32_t cpu = req->cpu_id;
+  uint32_t cpu = lruaccessbit_get_cpu_feature(req);
   if (params->tlb_sets > 0 && cpu >= params->tlb_num_cpus) {
     LOG(ERROR, STREAM_Utils,
         "LRUAccessBit: cpu_id %u >= tlb_num_cpus %u\n",

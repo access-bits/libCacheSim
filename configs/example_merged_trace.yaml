@@ -49,7 +49,7 @@ logging:
 # List of cache configurations to test
 configurations:
   # LruCoarse: coarse-grained LRU with per-CPU TLB simulation
-  # Requires a mergedTrace with cpu_id field
+  # Requires a mergedTrace where CPU ID is mapped to request features[0]
   - policy: lruCoarse
     cache_size: 100MB
     warmup_frac: 0.1

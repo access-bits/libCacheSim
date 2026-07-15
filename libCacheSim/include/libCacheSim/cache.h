@@ -16,6 +16,7 @@
 #include "admissionAlgo.h"
 #include "cacheObj.h"
 #include "const.h"
+#include "eviction_analyzer.h"
 #include "log.h"
 #include "macro.h"
 #include "prefetchAlgo.h"
@@ -27,6 +28,13 @@ extern "C" {
 
 struct cache;
 typedef struct cache cache_t;
+
+/* Forward declaration for analyzer registry */
+typedef struct {
+  struct eviction_analyzer **analyzers;
+  int n_analyzers;
+  int capacity;
+} eviction_analyzer_registry_t;
 
 typedef struct {
   uint64_t cache_size;
@@ -112,6 +120,10 @@ struct cache {
   admissioner_t *admissioner;
 
   struct prefetcher *prefetcher;
+
+  /* Eviction analyzers — called on every request */
+  eviction_analyzer_registry_t analyzer_registry;
+  cache_obj_t *last_evicted_obj;  /* Temporary: last evicted object for analyzer */
 
   void *eviction_params;
 

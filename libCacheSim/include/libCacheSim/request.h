@@ -71,8 +71,6 @@ typedef struct request {
   int32_t n_features;
   int32_t features[N_MAX_FEATURES];
 
-  uint8_t cpu_id;    /* CPU that issued this access (from trace) */
-
 } request_t;
 
 /**

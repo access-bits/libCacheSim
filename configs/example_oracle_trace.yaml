@@ -1,4 +1,4 @@
-# Example configuration for libCacheSim with oracleGeneralCompressedReverse trace
+# Example configuration for libCacheSim with oracleGeneralReverse trace
 
 trace:
   # Path to the oracle trace file (zstd-compressed, reverse chronological)
@@ -6,7 +6,7 @@ trace:
   path: /path/to/your/trace.oracle.zst
   
   # Trace type: oracleGeneralCompressedReverse
-  type: oracleGeneralCompressedReverse
+  type: oracleGeneralReverse
   
   # Trace reader parameters (empty for oracle traces, uses default settings)
   params: ""

@@ -84,7 +84,7 @@ typedef struct {
 } oracle_reverse_params_t;
 
 /* Background decompression thread worker */
-static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
+static void* oracleGeneralTraceReverse_decompress_worker(void *arg) {
   oracle_reverse_params_t *params = (oracle_reverse_params_t *)arg;
   
   while (true) {
@@ -182,7 +182,7 @@ static void* oracleGeneralCompressedReverse_decompress_worker(void *arg) {
 }
 
 /* Request decompression of a batch into specified buffer */
-static inline void oracleGeneralCompressedReverse_request_decompress(
+static inline void oracleGeneralTraceReverse_request_decompress(
     oracle_reverse_params_t *params, int buffer_idx, ssize_t batch_idx) {
   pthread_mutex_lock(&params->mutex);
   params->decompress_buffer_idx = buffer_idx;
@@ -194,7 +194,7 @@ static inline void oracleGeneralCompressedReverse_request_decompress(
 }
 
 /* Wait for decompression to complete and switch to the newly decompressed buffer */
-static inline bool oracleGeneralCompressedReverse_switch_buffer(
+static inline bool oracleGeneralTraceReverse_switch_buffer(
     oracle_reverse_params_t *params) {
   int next_buffer = 1 - params->active_buffer;
   
@@ -232,7 +232,7 @@ static inline bool oracleGeneralCompressedReverse_switch_buffer(
   if (params->current_batch >= 0) {
     /* Request decompression of next batch into the now-inactive buffer */
     int inactive_buffer = 1 - params->active_buffer;
-    oracleGeneralCompressedReverse_request_decompress(
+    oracleGeneralTraceReverse_request_decompress(
         params, inactive_buffer, params->current_batch);
   } else {
     params->eof = true;
@@ -241,10 +241,10 @@ static inline bool oracleGeneralCompressedReverse_switch_buffer(
   return true;
 }
 
-static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
+static inline int oracleGeneralTraceReverse_setup(reader_t *reader) {
   /* No header in binary file - read .meta file for batch information */
   
-  reader->trace_type = ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE;
+  reader->trace_type = ORACLE_GENERAL_REVERSE_TRACE;
   reader->trace_format = BINARY_TRACE_FORMAT;
   reader->item_size = sizeof(oracle_reverse_entry_t);
   reader->obj_id_is_num = true;
@@ -488,7 +488,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   
   /* Start background decompression thread */
   if (pthread_create(&params->decompress_thread, NULL, 
-                     oracleGeneralCompressedReverse_decompress_worker, params) != 0) {
+                     oracleGeneralTraceReverse_decompress_worker, params) != 0) {
     LOG(ERROR, STREAM_Reader,
         "oracleGeneralCompressedReverse: failed to create background decompression thread\n");
     fclose(params->file_handle);
@@ -513,7 +513,7 @@ static inline int oracleGeneralCompressedReverse_setup(reader_t *reader) {
   return 0;
 }
 
-static inline void oracleGeneralCompressedReverse_teardown(reader_t *reader) {
+static inline void oracleGeneralTraceReverse_teardown(reader_t *reader) {
   if (reader->reader_params != NULL) {
     oracle_reverse_params_t *params = 
       (oracle_reverse_params_t *)reader->reader_params;
@@ -548,7 +548,7 @@ static inline void oracleGeneralCompressedReverse_teardown(reader_t *reader) {
   }
 }
 
-static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
+static inline int oracleGeneralTraceReverse_read_one_req(reader_t *reader,
                                                               request_t *req) {
   oracle_reverse_params_t *params = 
     (oracle_reverse_params_t *)reader->reader_params;
@@ -574,7 +574,7 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
       }
       
       /* Request decompression and wait for it */
-      oracleGeneralCompressedReverse_request_decompress(
+      oracleGeneralTraceReverse_request_decompress(
           params, active, params->current_batch);
       
       pthread_mutex_lock(&params->mutex);
@@ -596,14 +596,14 @@ static inline int oracleGeneralCompressedReverse_read_one_req(reader_t *reader,
       params->current_batch--;
       if (params->current_batch >= 0) {
         int next_buffer = 1 - active;
-        oracleGeneralCompressedReverse_request_decompress(
+        oracleGeneralTraceReverse_request_decompress(
             params, next_buffer, params->current_batch);
       } else {
         params->eof = true;
       }
     } else {
       /* Subsequent loads: switch to already-decompressed buffer */
-      if (!oracleGeneralCompressedReverse_switch_buffer(params)) {
+      if (!oracleGeneralTraceReverse_switch_buffer(params)) {
         req->valid = false;
         return 1;
       }

@@ -16,7 +16,7 @@ extern "C" {
  *
  * Maps to request_t:
  *   obj_id  = vaddr (or vaddr >> 12 if address_mode is "virtual_addresses")
- *   cpu_id  = cpu
+ *   features[0] (cpu_id) = cpu
  *   obj_size = 1
  *
  * Architecture:
@@ -32,6 +32,14 @@ extern "C" {
 #include <pthread.h>
 
 #define MERGED_TRACE_BUFFER_SIZE (24 * 1024 * 1024) /* 24M entries per buffer */
+#define MERGED_TRACE_CPU_FEATURE_IDX 0
+
+static inline void mergedTrace_set_cpu_feature(request_t *req, uint8_t cpu_id) {
+  req->features[MERGED_TRACE_CPU_FEATURE_IDX] = (int32_t)cpu_id;
+  if (req->n_features <= MERGED_TRACE_CPU_FEATURE_IDX) {
+    req->n_features = MERGED_TRACE_CPU_FEATURE_IDX + 1;
+  }
+}
 
 typedef struct {
   uint64_t vaddr;
@@ -583,7 +591,7 @@ static inline int mergedTrace_read_one_req(reader_t *reader, request_t *req) {
   req->obj_id = (obj_id_t)addr;
   req->obj_size = 1;
   req->next_access_vtime = -2;
-  req->cpu_id = entry->cpu;
+  mergedTrace_set_cpu_feature(req, entry->cpu);
   req->valid = true;
 
   return 0;

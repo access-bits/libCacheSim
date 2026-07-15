@@ -55,8 +55,15 @@ trace_type_e trace_type_str_to_enum(const char *trace_type_str,
   } else if (strcasecmp(trace_type_str, "mergedTrace") == 0 ||
              strcasecmp(trace_type_str, "merged") == 0) {
     return MERGED_TRACE;
-  } else if (strcasecmp(trace_type_str, "oracleGeneralCompressedReverse") == 0) {
-    return ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE;
+  } else if (strcasecmp(trace_type_str, "filteredTrace") == 0 ||
+             strcasecmp(trace_type_str, "filtered") == 0) {
+    return FILTERED_TRACE;
+  } else if (strcasecmp(trace_type_str, "oracleFilteredTraceReverse") == 0 ||
+             strcasecmp(trace_type_str, "oracleFilteredReverse") == 0) {
+    return ORACLE_FILTERED_TRACE_REVERSE;
+  } else if (strcasecmp(trace_type_str, "oracleGeneralReverse") == 0 ||
+             strcasecmp(trace_type_str, "oracleGeneralTraceReverse") == 0) {
+    return ORACLE_GENERAL_REVERSE_TRACE;
   } else {
     LOG(ERROR, STREAM_Reader, "unsupported trace type: %s\n", trace_type_str);
     abort();

@@ -19,6 +19,7 @@
 #include "libCacheSim/reader.h"
 #include "libCacheSim/sim_config.h"
 #include "libCacheSim/simulator.h"
+#include "libCacheSim/eviction_analyzer_factory.h"
 #include "utils/include/mystr.h"
 #include "utils/include/mysys.h"
 #include "yaml_config.h"
@@ -96,6 +97,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < n_configs; i++) {
     caches[i] = create_cache(
         gcfg.trace_path,
+        gcfg.trace_type,
         configs[i].policy,
         configs[i].cache_size,
         configs[i].eviction_params[0] ? configs[i].eviction_params : NULL,
@@ -112,6 +114,15 @@ int main(int argc, char **argv) {
           configs[i].prefetch,
           configs[i].prefetch_params[0] ? configs[i].prefetch_params : NULL,
           configs[i].cache_size);
+    }
+
+    /* Set up eviction analyzers for this cache */
+    if (!setup_eviction_analyzers(caches[i], configs[i].eviction_analyzers,
+                                  configs[i].n_eviction_analyzers)) {
+      LOG(ERROR, STREAM_Main, "Failed to set up eviction analyzers for cache %d",
+          i);
+      log_shutdown();
+      return 1;
     }
   }
 

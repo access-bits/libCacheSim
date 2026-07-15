@@ -8,10 +8,12 @@
 
 #include <ctype.h>
 
+#include "customizedReader/filteredTrace.h"
+#include "customizedReader/oracle/oracleFilteredTraceReverse.h"
 #include "customizedReader/lcs.h"
 #include "customizedReader/mergedTrace.h"
 #include "customizedReader/oracle/oracleGeneralBin.h"
-#include "customizedReader/oracle/oracleGeneralCompressedReverse.h"
+#include "customizedReader/oracle/oracleGeneralTraceReverse.h"
 #include "customizedReader/oracle/oracleTwrBin.h"
 #include "customizedReader/oracle/oracleTwrNSBin.h"
 #include "customizedReader/twrBin.h"
@@ -194,8 +196,14 @@ reader_t *setup_reader(const char *const trace_path,
     case MERGED_TRACE:
       mergedTrace_setup(reader);
       break;
-    case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
-      oracleGeneralCompressedReverse_setup(reader);
+    case FILTERED_TRACE:
+      filteredTrace_setup(reader);
+      break;
+    case ORACLE_FILTERED_TRACE_REVERSE:
+      oracleFilteredTraceReverse_setup(reader);
+      break;
+    case ORACLE_GENERAL_REVERSE_TRACE:
+      oracleGeneralTraceReverse_setup(reader);
       break;
     default:
       LOG(ERROR, STREAM_Reader, "cannot recognize trace type: %c\n", reader->trace_type);
@@ -204,7 +212,9 @@ reader_t *setup_reader(const char *const trace_path,
 
   if (reader->trace_format == BINARY_TRACE_FORMAT && !reader->is_zstd_file
       && reader->trace_type != MERGED_TRACE
-      && reader->trace_type != ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
+      && reader->trace_type != FILTERED_TRACE
+      && reader->trace_type != ORACLE_FILTERED_TRACE_REVERSE
+      && reader->trace_type != ORACLE_GENERAL_REVERSE_TRACE) {
     ssize_t data_region_size = reader->file_size - reader->trace_start_offset;
     if (data_region_size % reader->item_size != 0) {
       LOG(WARN, STREAM_Reader, 
@@ -314,8 +324,14 @@ int read_one_req(reader_t *const reader, request_t *const req) {
       case MERGED_TRACE:
         status = mergedTrace_read_one_req(reader, req);
         break;
-      case ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE:
-        status = oracleGeneralCompressedReverse_read_one_req(reader, req);
+      case FILTERED_TRACE:
+        status = filteredTrace_read_one_req(reader, req);
+        break;
+      case ORACLE_FILTERED_TRACE_REVERSE:
+        status = oracleFilteredTraceReverse_read_one_req(reader, req);
+        break;
+      case ORACLE_GENERAL_REVERSE_TRACE:
+        status = oracleGeneralTraceReverse_read_one_req(reader, req);
         break;
       default:
         LOG(ERROR, STREAM_Reader, 
@@ -601,8 +617,12 @@ int close_reader(reader_t *const reader) {
     }
   } else if (reader->trace_type == MERGED_TRACE) {
     mergedTrace_teardown(reader);
-  } else if (reader->trace_type == ORACLE_GENERAL_COMPRESSED_REVERSE_TRACE) {
-    oracleGeneralCompressedReverse_teardown(reader);
+  } else if (reader->trace_type == FILTERED_TRACE) {
+    filteredTrace_teardown(reader);
+  } else if (reader->trace_type == ORACLE_FILTERED_TRACE_REVERSE) {
+    oracleFilteredTraceReverse_teardown(reader);
+  } else if (reader->trace_type == ORACLE_GENERAL_REVERSE_TRACE) {
+    oracleGeneralTraceReverse_teardown(reader);
   }
 
 #ifdef SUPPORT_ZSTD_TRACE

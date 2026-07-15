@@ -151,6 +151,7 @@ typedef struct reader {
   /* used for trace sampling */
   sampler_t *sampler;
   enum read_direction read_direction;
+
 } reader_t;
 
 static inline void set_default_reader_init_params(reader_init_param_t *params) {

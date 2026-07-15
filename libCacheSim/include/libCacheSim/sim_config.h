@@ -19,6 +19,18 @@ extern "C" {
 #define SIM_STR_MAX  256
 #define SIM_PATH_MAX 512
 
+/* Maximum number of eviction analyzers per configuration */
+#define MAX_EVICTION_ANALYZERS 16
+
+/* -----------------------------------------------------------------------
+ * Eviction analyzer configuration
+ * ----------------------------------------------------------------------- */
+typedef struct {
+  char type[SIM_STR_MAX];    /* analyzer type name, e.g. "eviction_age" */
+  char name[SIM_STR_MAX];    /* human-readable name, e.g. "age_tracker" */
+  char params[SIM_STR_MAX];  /* optional analyzer-specific params */
+} eviction_analyzer_config_t;
+
 /* -----------------------------------------------------------------------
  * Per-simulation configuration
  * ----------------------------------------------------------------------- */
@@ -37,6 +49,10 @@ typedef struct {
   char     admission_params[SIM_STR_MAX]; /* optional admission params, or "" */
   char     prefetch[SIM_STR_MAX];         /* prefetch algo name, or "" */
   char     prefetch_params[SIM_STR_MAX];  /* optional prefetch params, or "" */
+
+  /* Eviction analyzers: array of analyzer configs to attach to this cache */
+  eviction_analyzer_config_t eviction_analyzers[MAX_EVICTION_ANALYZERS];
+  int n_eviction_analyzers;  /* number of analyzers (0 = none) */
 } sim_config_t;
 
 /* -----------------------------------------------------------------------

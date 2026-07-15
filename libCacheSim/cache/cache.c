@@ -47,6 +47,9 @@ cache_t *cache_struct_init(const char *const cache_name,
   cache->to_evict_candidate = NULL;
   cache->to_evict_candidate_gen_vtime = -1;
 
+  /* Initialize eviction analyzer registry */
+  cache_init_analyzer_registry(cache);
+
   cache->can_insert = cache_can_insert_default;
   cache->get_occupied_byte = cache_get_occupied_byte_default;
   cache->get_n_obj = cache_get_n_obj_default;
@@ -79,6 +82,10 @@ void cache_struct_free(cache_t *cache) {
   free_hashtable(cache->hashtable);
   if (cache->admissioner != NULL) cache->admissioner->free(cache->admissioner);
   if (cache->prefetcher != NULL) cache->prefetcher->free(cache->prefetcher);
+  
+  /* Finalize eviction analyzers (with NULL output_dir, should be done earlier) */
+  cache_finalize_eviction_analyzers(cache, NULL);
+  
   my_free(sizeof(cache_t), cache);
 }
 
@@ -269,6 +276,10 @@ bool cache_get_base(cache_t *cache, const request_t *req) {
     cache->prefetcher->prefetch(cache, req);
   }
 
+  /* Notify eviction analyzers (last_evicted_obj set by evict, or NULL if no eviction) */
+  cache_notify_eviction_analyzers(cache, cache->last_evicted_obj, (request_t *)req);
+  cache->last_evicted_obj = NULL;  /* Reset for next request */
+
   return hit;
 }
 
@@ -315,6 +326,9 @@ cache_obj_t *cache_insert_base(cache_t *cache, const request_t *req) {
  */
 void cache_evict_base(cache_t *cache, cache_obj_t *obj,
                       bool remove_from_hashtable) {
+  /* Track evicted object for analyzers */
+  cache->last_evicted_obj = obj;
+
 #if defined(TRACK_EVICTION_V_AGE)
   if (cache->track_eviction_age) {
     record_eviction_age(cache, obj, CURR_TIME(cache, req) - obj->create_time);

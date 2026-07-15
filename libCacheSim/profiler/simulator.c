@@ -13,9 +13,11 @@ extern "C" {
 #include "libCacheSim/sim_config.h"
 #include "libCacheSim/simulator.h"
 #include "libCacheSim/log.h"
+#include "../logger/progress_reporter.h"
 
 #include <math.h>
 #include <semaphore.h>
+#include <ctype.h>
 
 #include "../cache/cacheUtils.h"
 #include "../utils/include/myprint.h"
@@ -343,8 +345,14 @@ cache_stat_t *simulate_with_config_list(
                 "cannot push worker in simulate_with_config_list\n");
   }
 
+  /* Initialize progress reporting */
+  progress_reporter_init();
+
   /* Allocate batch buffer */
   request_t *batch = my_malloc_n(request_t, queue_depth);
+
+  /* Initialize progress tracking */
+  int64_t progress_start_time_ns = progress_reporter_get_time_ns();
 
   /* Main reader loop — batch-and-barrier pattern */
   while (true) {
@@ -355,6 +363,9 @@ cache_stat_t *simulate_with_config_list(
       read_one_req(reader, &req);
       if (!req.valid) break;
       batch[batch_size++] = req;
+      
+      /* Report progress every batch fill iteration (throttled internally) */
+      progress_reporter_report(reader, progress_start_time_ns);
     }
 
     if (batch_size == 0) break;  /* trace exhausted */
@@ -377,6 +388,9 @@ cache_stat_t *simulate_with_config_list(
     sem_wait(&queues[i]->empty_sem);
     bqueue_close(queues[i]);
   }
+
+  /* Shutdown progress reporting (clears progress bar) */
+  progress_reporter_shutdown();
 
   /* Block until all workers finish */
   g_thread_pool_free(pool, FALSE, TRUE);

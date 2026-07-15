@@ -128,6 +128,15 @@ set(prefetch_sources_c
 )
 
 # ==============================================================================
+# Eviction Analysis Infrastructure
+# ==============================================================================
+set(eviction_analysis_sources_c
+    eviction_analysis/eviction_analyzer_registry.c
+    eviction_analysis/eviction_analyzer_factory.c
+    eviction_analysis/custom_analyzers/filtered_trace_monitor.c
+)
+
+# ==============================================================================
 # Cache
 # ==============================================================================
 # Main cache library
@@ -135,6 +144,7 @@ set(cache_sources_c
     ${admission_sources_c}
     ${eviction_sources_c}
     ${prefetch_sources_c}
+    ${eviction_analysis_sources_c}
     cache.c
     plugin.c
 )

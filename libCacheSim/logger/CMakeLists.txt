@@ -1,5 +1,6 @@
 add_library(logger_lib OBJECT
     log.c
+    progress_reporter.c
 )
 
 target_include_directories(logger_lib PRIVATE

@@ -1,0 +1,121 @@
+trace:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/analysis/lru-tlbfiltered/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/tpch-sparksql-large/analysis/lru-tlbfiltered
+  level: INFO
+  streams: ALL
+
+configurations:
+  # 30% of 4499392 bytes = 1350K
+  - policy: lruTLBFiltered
+    cache_size: 1349818
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 40% of 4499392 bytes = 1800K
+  - policy: lruTLBFiltered
+    cache_size: 1799757
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 50% of 4499392 bytes = 2250K
+  - policy: lruTLBFiltered
+    cache_size: 2249696
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 60% of 4499392 bytes = 2700K
+  - policy: lruTLBFiltered
+    cache_size: 2699635
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 70% of 4499392 bytes = 3150K
+  - policy: lruTLBFiltered
+    cache_size: 3149574
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 80% of 4499392 bytes = 3600K
+  - policy: lruTLBFiltered
+    cache_size: 3599513
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 90% of 4499392 bytes = 4050K
+  - policy: lruTLBFiltered
+    cache_size: 4049452
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 95% of 4499392 bytes = 4275K
+  - policy: lruTLBFiltered
+    cache_size: 4274422
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 35% of 4499392 bytes = 1575K
+  # - policy: lruTLBFiltered
+  #   cache_size: 1575288
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 45% of 4499392 bytes = 2025K
+  # - policy: lruTLBFiltered
+  #   cache_size: 2025227
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 55% of 4499392 bytes = 2475K
+  # - policy: lruTLBFiltered
+  #   cache_size: 2475166
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 65% of 4499392 bytes = 2925K
+  # - policy: lruTLBFiltered
+  #   cache_size: 2925105
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 75% of 4499392 bytes = 3375K
+  # - policy: lruTLBFiltered
+  #   cache_size: 3374983
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 85% of 4499392 bytes = 3825K
+  # - policy: lruTLBFiltered
+  #   cache_size: 3824922
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"

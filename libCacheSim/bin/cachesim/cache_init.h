@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 static inline cache_t *create_cache(const char *trace_path,
+                                    const char *trace_type,
                                     const char *eviction_algo,
                                     const uint64_t cache_size,
                                     const char *eviction_params,
@@ -131,22 +132,26 @@ static inline cache_t *create_cache(const char *trace_path,
       }
     }
   } else if (strcasecmp(eviction_algo, "belady") == 0) {
-    if (strcasestr(trace_path, "oracleGeneral") == NULL &&
-        strcasestr(trace_path, "lcs") == NULL) {
-      WARN("belady is only supported for oracleGeneral and lcs trace\n");
-      WARN("to convert a trace to lcs format\n");
-      WARN("./bin/traceConv input_trace trace_format output_trace\n");
-      WARN("./bin/traceConv ../data/cloudPhysicsIO.txt txt\n");
+    if (strcasecmp(trace_type, "oracleGeneral") != 0 &&
+        strcasecmp(trace_type, "lcs") != 0 &&
+        strcasecmp(trace_type, "oracleGeneralTraceReverse") != 0 &&
+        strcasecmp(trace_type, "oracleGeneralReverse") != 0 &&
+        strcasecmp(trace_type, "oracleFilteredTraceReverse") != 0 &&
+        strcasecmp(trace_type, "oracleFilteredReverse") != 0) {
+      WARN("belady is only supported for oracleGeneral, oracleGeneralReverse, oracleFiltered, and lcs trace\n");
+      WARN("trace type: %s is not supported\n", trace_type);
       exit(1);
     }
     cache = Belady_init(cc_params, eviction_params);
   } else if (strcasecmp(eviction_algo, "beladySize") == 0) {
-    if (strcasestr(trace_path, "oracleGeneral") == NULL &&
-        strcasestr(trace_path, "lcs") == NULL) {
-      WARN("beladySize is only supported for oracleGeneral and lcs trace\n");
-      WARN("to convert a trace to lcs format\n");
-      WARN("./bin/traceConv input_trace trace_format output_trace\n");
-      WARN("./bin/traceConv ../data/cloudPhysicsIO.txt txt\n");
+    if (strcasecmp(trace_type, "oracleGeneral") != 0 &&
+        strcasecmp(trace_type, "lcs") != 0 &&
+        strcasecmp(trace_type, "oracleGeneralTraceReverse") != 0 &&
+        strcasecmp(trace_type, "oracleGeneralReverse") != 0 &&
+        strcasecmp(trace_type, "oracleFilteredTraceReverse") != 0 &&
+        strcasecmp(trace_type, "oracleFilteredReverse") != 0) {
+      WARN("beladySize is only supported for oracleGeneral, oracleGeneralReverse, oracleFiltered, and lcs trace\n");
+      WARN("trace type: %s is not supported\n", trace_type);
       exit(1);
     }
     cc_params.hashpower = MAX(cc_params.hashpower - 8, 16);

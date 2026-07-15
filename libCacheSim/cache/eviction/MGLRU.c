@@ -40,6 +40,14 @@ extern "C" {
 #define MGLRU_DEFAULT_TLB_WAYS 4U
 #define MGLRU_DEFAULT_TLB_NUM_CPUS 4U
 #define MGLRU_DEFAULT_REPORT_INTERVAL 10000000UL
+#define MGLRU_CPU_FEATURE_IDX 0
+
+static inline uint32_t mglru_get_cpu_feature(const request_t *req) {
+  if (req->n_features <= MGLRU_CPU_FEATURE_IDX) {
+    return 0;
+  }
+  return (uint32_t)(uint8_t)req->features[MGLRU_CPU_FEATURE_IDX];
+}
 
 typedef struct {
   bool valid;
@@ -506,7 +514,7 @@ static bool MGLRU_get(cache_t *cache, const request_t *req) {
 
   mglru_rotate_generation_if_needed(cache, params);
 
-  uint32_t cpu = req->cpu_id;
+  uint32_t cpu = mglru_get_cpu_feature(req);
   if (params->tlb_sets > 0 && cpu >= params->tlb_num_cpus) {
     LOG(ERROR, STREAM_Utils,
         "MGLRU: cpu_id %u >= tlb_num_cpus %u\n", cpu, params->tlb_num_cpus);

@@ -7,7 +7,7 @@
 //    2. On eviction, the evicted page is invalidated from ALL per-CPU TLBs.
 //
 //  Per-CPU TLBs: each CPU has its own LRU TLB (512 sets × 4 ways).
-//  The CPU ID comes from req->cpu_id (set by the mergedTrace reader).
+//  The CPU ID comes from request features[0] (set by the mergedTrace reader).
 //
 //  Usage:
 //    ./bin/cachesim <merged_trace> mergedTrace lrutlbfiltered <size>
@@ -36,6 +36,14 @@ extern "C" {
 #define LRUTLBFILTERED_DEFAULT_TLB_WAYS             4U
 #define LRUTLBFILTERED_DEFAULT_TLB_NUM_CPUS         4U
 #define LRUTLBFILTERED_DEFAULT_TLB_REPORT_INTERVAL  10000000UL
+#define LRUTLBFILTERED_CPU_FEATURE_IDX              0
+
+static inline uint32_t lrutlbfiltered_get_cpu_feature(const request_t *req) {
+  if (req->n_features <= LRUTLBFILTERED_CPU_FEATURE_IDX) {
+    return 0;
+  }
+  return (uint32_t)(uint8_t)req->features[LRUTLBFILTERED_CPU_FEATURE_IDX];
+}
 
 typedef struct {
   bool     valid;
@@ -337,7 +345,7 @@ static bool LRUTLBFiltered_get(cache_t *cache, const request_t *req) {
 
   /* TLB simulation on the CPU that issued this access */
   params->total_accesses++;
-  uint32_t cpu = req->cpu_id;
+  uint32_t cpu = lrutlbfiltered_get_cpu_feature(req);
   if (cpu >= params->tlb_num_cpus) {
     LOG(ERROR, STREAM_Utils,
         "LRUTLBFiltered: cpu_id %u >= tlb_num_cpus %u\n",

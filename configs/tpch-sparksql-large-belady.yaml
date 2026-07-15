@@ -1,0 +1,122 @@
+trace:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/oracle-trace/oracle_trace.zstd
+  type: oracleFilteredReverse
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 4194304
+  queue_depth: 1048576
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/analysis/belady/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/tpch-sparksql-large/analysis/belady
+  level: INFO
+  streams: ALL
+
+configurations:
+  # 30% of 4499392 bytes = 1350K
+  - policy: Belady
+    cache_size: 1349818
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 40% of 4499392 bytes = 1800K
+  - policy: Belady
+    cache_size: 1799757
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 50% of 4499392 bytes = 2250K
+  - policy: Belady
+    cache_size: 2249696
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 60% of 4499392 bytes = 2700K
+  - policy: Belady
+    cache_size: 2699635
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 70% of 4499392 bytes = 3150K
+  - policy: Belady
+    cache_size: 3149574
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 80% of 4499392 bytes = 3600K
+  - policy: Belady
+    cache_size: 3599513
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 90% of 4499392 bytes = 4050K
+  - policy: Belady
+    cache_size: 4049452
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 95% of 4499392 bytes = 4275K
+  - policy: Belady
+    cache_size: 4274422
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # Commented out intermediate sizes for reference
+  # 35% of 4499392 bytes = 1575K
+  # - policy: Belady
+  #   cache_size: 1575288
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 45% of 4499392 bytes = 2025K
+  # - policy: Belady
+  #   cache_size: 2025227
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 55% of 4499392 bytes = 2475K
+  # - policy: Belady
+  #   cache_size: 2475166
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 65% of 4499392 bytes = 2925K
+  # - policy: Belady
+  #   cache_size: 2925105
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 75% of 4499392 bytes = 3375K
+  # - policy: Belady
+  #   cache_size: 3374983
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 85% of 4499392 bytes = 3825K
+  # - policy: Belady
+  #   cache_size: 3824922
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"

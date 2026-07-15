@@ -80,12 +80,14 @@ static void next_event(yaml_parser_t *parser, yaml_event_t *ev) {
 }
 
 /* Expect a scalar and return its value (points into the event; caller must
- * copy before calling next_event again).  ev must already be initialised. */
-static const char *expect_scalar(yaml_parser_t *parser, yaml_event_t *ev) {
+ * copy before calling next_event again).  ev must already be initialised.
+ * param: key name for debugging (e.g., "policy", "cache_size") */
+static const char *expect_scalar(yaml_parser_t *parser, yaml_event_t *ev, const char *param) {
   yaml_event_delete(ev);
   next_event(parser, ev);
   if (ev->type != YAML_SCALAR_EVENT) {
-    die("expected scalar value");
+    LOG(ERROR, STREAM_Main, "yaml_config: parameter '%s' expected scalar value but got event type %d", param, ev->type);
+    die("yaml parse error");
   }
   return (const char *)ev->data.scalar.value;
 }
@@ -109,7 +111,7 @@ static void parse_trace_section(yaml_parser_t *parser, yaml_event_t *ev,
     char key[64];
     safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
 
-    const char *val = expect_scalar(parser, ev);
+    const char *val = expect_scalar(parser, ev, key);
 
     if (strcmp(key, "path") == 0) {
       safe_copy(g->trace_path, sizeof(g->trace_path), val);
@@ -140,7 +142,7 @@ static void parse_global_section(yaml_parser_t *parser, yaml_event_t *ev,
     char key[64];
     safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
 
-    const char *val = expect_scalar(parser, ev);
+    const char *val = expect_scalar(parser, ev, key);
 
     if (strcmp(key, "queue_depth") == 0) {
       g->queue_depth = atoi(val);
@@ -174,7 +176,7 @@ static void parse_logging_section(yaml_parser_t *parser, yaml_event_t *ev,
     char key[64];
     safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
 
-    const char *val = expect_scalar(parser, ev);
+    const char *val = expect_scalar(parser, ev, key);
 
     if (strcmp(key, "dir") == 0) {
       safe_copy(g->log_dir, sizeof(g->log_dir), val);
@@ -200,11 +202,69 @@ static void parse_output_section(yaml_parser_t *parser, yaml_event_t *ev,
     char key[64];
     safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
 
-    const char *val = expect_scalar(parser, ev);
+    const char *val = expect_scalar(parser, ev, key);
 
     if (strcmp(key, "path") == 0) {
       safe_copy(g->output_path, sizeof(g->output_path), val);
     }
+  }
+}
+
+/* Parse the eviction_analyzers sequence within a configuration */
+static void parse_eviction_analyzers_sequence(yaml_parser_t *parser,
+                                              yaml_event_t *ev,
+                                              sim_config_t *c) {
+  /* ev is currently the SEQUENCE_START */
+  c->n_eviction_analyzers = 0;
+
+  while (true) {
+    yaml_event_delete(ev);
+    next_event(parser, ev);
+
+    if (ev->type == YAML_SEQUENCE_END_EVENT) break;
+    if (ev->type != YAML_MAPPING_START_EVENT)
+      die("expected mapping in eviction_analyzers sequence");
+
+    if (c->n_eviction_analyzers >= MAX_EVICTION_ANALYZERS) {
+      die("eviction_analyzers: too many analyzers");
+    }
+
+    eviction_analyzer_config_t *analyzer_cfg =
+        &c->eviction_analyzers[c->n_eviction_analyzers];
+    memset(analyzer_cfg, 0, sizeof(*analyzer_cfg));
+
+    /* Parse analyzer entry */
+    while (true) {
+      yaml_event_delete(ev);
+      next_event(parser, ev);
+
+      if (ev->type == YAML_MAPPING_END_EVENT) break;
+      if (ev->type != YAML_SCALAR_EVENT)
+        die("expected key scalar in analyzer entry");
+
+      char key[64];
+      safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
+
+      const char *val = expect_scalar(parser, ev, key);
+
+      if (strcmp(key, "type") == 0) {
+        safe_copy(analyzer_cfg->type, sizeof(analyzer_cfg->type), val);
+      } else if (strcmp(key, "name") == 0) {
+        safe_copy(analyzer_cfg->name, sizeof(analyzer_cfg->name), val);
+      } else if (strcmp(key, "params") == 0) {
+        safe_copy(analyzer_cfg->params, sizeof(analyzer_cfg->params), val);
+      }
+    }
+
+    if (analyzer_cfg->type[0] == '\0') {
+      die("analyzer entry missing required field: type");
+    }
+    /* name defaults to type if not specified */
+    if (analyzer_cfg->name[0] == '\0') {
+      safe_copy(analyzer_cfg->name, sizeof(analyzer_cfg->name), analyzer_cfg->type);
+    }
+
+    c->n_eviction_analyzers++;
   }
 }
 
@@ -215,6 +275,7 @@ static void parse_one_config(yaml_parser_t *parser, yaml_event_t *ev,
   memset(c, 0, sizeof(*c));
   c->warmup_sec  = -1;    /* -1 means no default warmup from seconds */
   c->warmup_frac = 0.0;
+  c->n_eviction_analyzers = 0;
 
   while (true) {
     yaml_event_delete(ev);
@@ -227,30 +288,40 @@ static void parse_one_config(yaml_parser_t *parser, yaml_event_t *ev,
     char key[64];
     safe_copy(key, sizeof(key), (const char *)ev->data.scalar.value);
 
-    const char *val = expect_scalar(parser, ev);
+    /* Special case: eviction_analyzers is a sequence, not a scalar */
+    if (strcmp(key, "eviction_analyzers") == 0) {
+      yaml_event_delete(ev);
+      next_event(parser, ev);
+      if (ev->type != YAML_SEQUENCE_START_EVENT)
+        die("eviction_analyzers: expected sequence");
+      parse_eviction_analyzers_sequence(parser, ev, c);
+    } else {
+      /* All other fields are scalars */
+      const char *val = expect_scalar(parser, ev, key);
 
-    if (strcmp(key, "policy") == 0) {
-      safe_copy(c->policy, sizeof(c->policy), val);
-    } else if (strcmp(key, "cache_size") == 0) {
-      c->cache_size = parse_size_str(val);
-      if (c->cache_size == 0) {
-        die2("cache_size", "cannot parse size string");
+      if (strcmp(key, "policy") == 0) {
+        safe_copy(c->policy, sizeof(c->policy), val);
+      } else if (strcmp(key, "cache_size") == 0) {
+        c->cache_size = parse_size_str(val);
+        if (c->cache_size == 0) {
+          die2("cache_size", "cannot parse size string");
+        }
+        safe_copy(c->cache_size_str, sizeof(c->cache_size_str), val);
+      } else if (strcmp(key, "warmup_sec") == 0) {
+        c->warmup_sec = atoi(val);
+      } else if (strcmp(key, "warmup_frac") == 0) {
+        c->warmup_frac = strtod(val, NULL);
+      } else if (strcmp(key, "eviction_params") == 0) {
+        safe_copy(c->eviction_params, sizeof(c->eviction_params), val);
+      } else if (strcmp(key, "admission") == 0) {
+        safe_copy(c->admission, sizeof(c->admission), val);
+      } else if (strcmp(key, "admission_params") == 0) {
+        safe_copy(c->admission_params, sizeof(c->admission_params), val);
+      } else if (strcmp(key, "prefetch") == 0) {
+        safe_copy(c->prefetch, sizeof(c->prefetch), val);
+      } else if (strcmp(key, "prefetch_params") == 0) {
+        safe_copy(c->prefetch_params, sizeof(c->prefetch_params), val);
       }
-      safe_copy(c->cache_size_str, sizeof(c->cache_size_str), val);
-    } else if (strcmp(key, "warmup_sec") == 0) {
-      c->warmup_sec = atoi(val);
-    } else if (strcmp(key, "warmup_frac") == 0) {
-      c->warmup_frac = strtod(val, NULL);
-    } else if (strcmp(key, "eviction_params") == 0) {
-      safe_copy(c->eviction_params, sizeof(c->eviction_params), val);
-    } else if (strcmp(key, "admission") == 0) {
-      safe_copy(c->admission, sizeof(c->admission), val);
-    } else if (strcmp(key, "admission_params") == 0) {
-      safe_copy(c->admission_params, sizeof(c->admission_params), val);
-    } else if (strcmp(key, "prefetch") == 0) {
-      safe_copy(c->prefetch, sizeof(c->prefetch), val);
-    } else if (strcmp(key, "prefetch_params") == 0) {
-      safe_copy(c->prefetch_params, sizeof(c->prefetch_params), val);
     }
   }
 
