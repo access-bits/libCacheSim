@@ -86,6 +86,15 @@ static void bqueue_push_batch(bounded_queue_t *q, const request_t *batch,
   sem_post(&q->ready_sem);
 }
 
+static bool bqueue_is_closed(bounded_queue_t *q) {
+  /* Reader-side probe used to retire workers without touching their cache state. */
+  bool closed;
+  g_mutex_lock(&q->mutex);
+  closed = q->closed;
+  g_mutex_unlock(&q->mutex);
+  return closed;
+}
+
 /**
  * Worker: Process all requests from queue while holding lock.
  * No contention - reader is blocked at barrier waiting for empty_sem.
@@ -121,6 +130,14 @@ static int bqueue_process_batch(bounded_queue_t *q, cache_t *cache,
         (warmup_sec > 0 && req->clock_time < (int64_t)warmup_sec)) {
       cache->get(cache, req);
       result->n_warmup_req++;
+      if (cache_should_worker_exit(cache)) {
+        /* Drain and close queue so reader no longer waits/pushes this worker. */
+        q->count = 0;
+        q->closed = true;
+        g_mutex_unlock(&q->mutex);
+        sem_post(&q->empty_sem);
+        return -1;
+      }
       continue;
     }
 
@@ -132,6 +149,15 @@ static int bqueue_process_batch(bounded_queue_t *q, cache_t *cache,
       result->n_miss++;
       result->n_miss_byte += req->obj_size;
       result->n_miss_cost += req->obj_cost;
+    }
+
+    if (cache_should_worker_exit(cache)) {
+      /* Same retirement path for measured phase. */
+      q->count = 0;
+      q->closed = true;
+      g_mutex_unlock(&q->mutex);
+      sem_post(&q->empty_sem);
+      return -1;
     }
   }
   
@@ -207,8 +233,8 @@ static void _simulate_from_queue(gpointer data, gpointer user_data) {
         p->queue, cache, result, &consumed, &start_ts,
         p->n_warmup_req, p->warmup_sec);
     
-    if (processed == 0) {
-      break;  /* EOF reached */
+    if (processed <= 0) {
+      break;  /* EOF (0) or fail-stop retirement (-1) */
     }
 
     /* Periodic reporting: print stats every report_interval measured requests */
@@ -249,6 +275,18 @@ static void _simulate_from_queue(gpointer data, gpointer user_data) {
 
   result->n_obj         = cache->n_obj;
   result->occupied_byte = cache->occupied_byte;
+  if (cache_should_worker_exit(cache)) {
+    result->worker_exited_early = true;
+    result->worker_exit_code = cache_get_worker_exit_code(cache);
+    strncpy(result->worker_exit_reason, cache_get_worker_exit_reason(cache),
+            CACHE_WORKER_EXIT_REASON_LEN - 1);
+    result->worker_exit_reason[CACHE_WORKER_EXIT_REASON_LEN - 1] = '\0';
+
+    LOG(WARN, p->config_stream,
+        "[%s] worker exited early (code=%d, reason=%s)", cache->cache_name,
+        result->worker_exit_code,
+        result->worker_exit_reason[0] ? result->worker_exit_reason : "n/a");
+  }
 
   g_mutex_lock(p->progress_mtx);
   (*p->progress)++;
@@ -296,8 +334,11 @@ cache_stat_t *simulate_with_config_list(
 
   /* Allocate per-simulator bounded queues */
   bounded_queue_t **queues = my_malloc_n(bounded_queue_t *, n_configs);
+  bool *worker_active = my_malloc_n(bool, n_configs);
+  int active_workers = n_configs;
   for (int i = 0; i < n_configs; i++) {
     queues[i]            = bqueue_create(queue_depth);
+    worker_active[i]     = true;
     result[i].cache_size = caches[i]->cache_size;
   }
 
@@ -356,6 +397,12 @@ cache_stat_t *simulate_with_config_list(
 
   /* Main reader loop — batch-and-barrier pattern */
   while (true) {
+    if (active_workers == 0) {
+      LOG(WARN, STREAM_Profiler,
+          "simulate_with_config_list: all workers exited early; stopping dispatch");
+      break;
+    }
+
     /* Phase 1: Fill batch (zero locks) */
     int       batch_size = 0;
     request_t req;
@@ -370,23 +417,41 @@ cache_stat_t *simulate_with_config_list(
 
     if (batch_size == 0) break;  /* trace exhausted */
 
-    /* Phase 2: Barrier — wait for all queues to drain */
+    /* Phase 2: Barrier — wait only on active workers. */
     for (int i = 0; i < n_configs; i++) {
-      sem_wait(&queues[i]->empty_sem);
+      if (worker_active[i]) {
+        sem_wait(&queues[i]->empty_sem);
+      }
     }
 
-    /* Phase 3: Push batch to all queues, signal each worker */
+    /* Retire workers that requested early exit during prior processing. */
     for (int i = 0; i < n_configs; i++) {
-      bqueue_push_batch(queues[i], batch, batch_size);
+      if (worker_active[i] && bqueue_is_closed(queues[i])) {
+        worker_active[i] = false;
+        active_workers--;
+      }
+    }
+
+    if (active_workers == 0) {
+      break;
+    }
+
+    /* Phase 3: Fan out only to active workers. Retired workers are skipped. */
+    for (int i = 0; i < n_configs; i++) {
+      if (worker_active[i]) {
+        bqueue_push_batch(queues[i], batch, batch_size);
+      }
     }
 
     if (batch_size < queue_depth) break;  /* partial batch = EOF */
   }
 
-  /* Signal EOF: wait for final drain, then close all queues */
+  /* Signal EOF only to still-active workers; retired ones are already closed. */
   for (int i = 0; i < n_configs; i++) {
-    sem_wait(&queues[i]->empty_sem);
-    bqueue_close(queues[i]);
+    if (worker_active[i]) {
+      sem_wait(&queues[i]->empty_sem);
+      bqueue_close(queues[i]);
+    }
   }
 
   /* Shutdown progress reporting (clears progress bar) */
@@ -400,6 +465,7 @@ cache_stat_t *simulate_with_config_list(
   for (int i = 0; i < n_configs; i++) {
     bqueue_destroy(queues[i]);
   }
+  my_free(sizeof(bool) * n_configs, worker_active);
   my_free(sizeof(bounded_queue_t *) * n_configs, queues);
   my_free(sizeof(request_t) * queue_depth, batch);
 

@@ -46,6 +46,9 @@ cache_t *cache_struct_init(const char *const cache_name,
   cache->n_req = 0;
   cache->to_evict_candidate = NULL;
   cache->to_evict_candidate_gen_vtime = -1;
+  cache->worker_exit_requested = false;
+  cache->worker_exit_code = 0;
+  cache->worker_exit_reason[0] = '\0';
 
   /* Initialize eviction analyzer registry */
   cache_init_analyzer_registry(cache);
@@ -71,6 +74,36 @@ cache_t *cache_struct_init(const char *const cache_name,
   hashtable_add_ptr_to_monitoring(cache->hashtable, &cache->q_tail);
 
   return cache;
+}
+
+void cache_request_worker_exit(cache_t *cache, int32_t exit_code,
+                               const char *reason) {
+  /* Preserve first failure cause for easier root-cause debugging. */
+  if (cache->worker_exit_requested) {
+    return;
+  }
+
+  cache->worker_exit_requested = true;
+  cache->worker_exit_code = exit_code;
+  if (reason != NULL && reason[0] != '\0') {
+    strncpy(cache->worker_exit_reason, reason,
+            CACHE_WORKER_EXIT_REASON_LEN - 1);
+    cache->worker_exit_reason[CACHE_WORKER_EXIT_REASON_LEN - 1] = '\0';
+  } else {
+    cache->worker_exit_reason[0] = '\0';
+  }
+}
+
+bool cache_should_worker_exit(const cache_t *cache) {
+  return cache->worker_exit_requested;
+}
+
+int32_t cache_get_worker_exit_code(const cache_t *cache) {
+  return cache->worker_exit_code;
+}
+
+const char *cache_get_worker_exit_reason(const cache_t *cache) {
+  return cache->worker_exit_reason;
 }
 
 /**
@@ -245,6 +278,11 @@ cache_obj_t *cache_find_base(cache_t *cache, const request_t *req,
  * @return true if cache hit, false if cache miss
  */
 bool cache_get_base(cache_t *cache, const request_t *req) {
+  /* Honor fail-stop before doing any metadata updates. */
+  if (cache_should_worker_exit(cache)) {
+    return false;
+  }
+
   cache->n_req += 1;
 
   LOG(DEBUG, STREAM_Cache, "******* %s req %ld, obj %ld, obj_size %ld, cache size %ld/%ld\n",
@@ -267,8 +305,25 @@ bool cache_get_base(cache_t *cache, const request_t *req) {
     while (cache->get_occupied_byte(cache) + req->obj_size +
                cache->obj_md_size >
            cache->cache_size) {
+      /* Generic progress guard: policies must eventually reduce occupancy. */
+      int64_t occupied_before = cache->get_occupied_byte(cache);
       cache->evict(cache, req);
+      int64_t occupied_after = cache->get_occupied_byte(cache);
+      if (occupied_after >= occupied_before) {
+        LOG(WARN, STREAM_Cache,
+            "%s: eviction made no progress (occupied=%ld, req_size=%ld); requesting worker exit\n",
+            cache->cache_name, (long)occupied_after, (long)req->obj_size);
+        cache_request_worker_exit(cache, 1,
+                                  "eviction made no progress during insertion");
+        return false;
+      }
     }
+
+    if (cache_should_worker_exit(cache)) {
+      /* Skip insertion after fail-stop request to keep state consistent. */
+      return false;
+    }
+
     cache->insert(cache, req);
   }
 

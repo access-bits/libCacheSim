@@ -149,7 +149,7 @@ void progress_reporter_report(struct reader *reader, int64_t start_time_ns) {
   if (g_progress_state.smoothed_rate == 0.0) {
     rate = instant_rate;  /* cold start: use raw rate */
   } else {
-    rate = 0.25 * instant_rate + 0.75 * g_progress_state.smoothed_rate;
+    rate = 0.1 * instant_rate + 0.9 * g_progress_state.smoothed_rate;
   }
   
   /* Calculate ETA */

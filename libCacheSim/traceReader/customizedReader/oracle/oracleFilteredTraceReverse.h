@@ -75,8 +75,8 @@ extern "C" {
 #include "libCacheSim/reader.h"
 
 #define ORACLE_FILTERED_TRACE_REVERSE_BUFFER_SIZE (24 * 1024 * 1024)
-#define ORACLE_FILTERED_TRACE_REVERSE_TAG_FEATURE_IDX 0
-#define ORACLE_FILTERED_TRACE_REVERSE_INDEX_FEATURE_IDX 1
+#define ORACLE_FILTERED_TRACE_REVERSE_TAG_FEATURE_IDX 1
+#define ORACLE_FILTERED_TRACE_REVERSE_INDEX_FEATURE_IDX 2
 
 /* Packed entry format from oracle_filtered_trace_generator.cpp */
 typedef struct {
@@ -935,8 +935,13 @@ static inline int oracleFilteredTraceReverse_read_one_req(reader_t *reader, requ
   req->clock_time = (int64_t)reader->n_read_req;
   req->obj_id = (obj_id_t)entry->vaddr;
   req->obj_size = 1;
-  req->next_access_vtime = -2;
-  oracleFilteredTraceReverse_set_features(req, entry->tag, entry->index);
+  /* Oracle index as next_access_vtime: preserve UINT64_MAX sentinel as INT64_MAX */
+  if (entry->index == UINT64_MAX) {
+    req->next_access_vtime = INT64_MAX;
+  } else {
+    req->next_access_vtime = (int64_t)entry->index;
+  }
+  oracleFilteredTraceReverse_set_features(req, entry->tag, 0);
   req->valid = true;
 
   return 0;

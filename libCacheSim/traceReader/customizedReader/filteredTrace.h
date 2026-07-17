@@ -69,8 +69,8 @@ extern "C" {
 #include "libCacheSim/reader.h"
 
 #define FILTERED_TRACE_BUFFER_SIZE (24 * 1024 * 1024)
-#define FILTERED_TRACE_TAG_FEATURE_IDX 0
-#define FILTERED_TRACE_FREQ_FEATURE_IDX 1
+#define FILTERED_TRACE_TAG_FEATURE_IDX 1
+#define FILTERED_TRACE_FREQ_FEATURE_IDX 2
 
 /* Packed entry format from filtered_trace_generator.cpp */
 typedef struct {
@@ -482,12 +482,12 @@ static void *filteredTrace_decompress_worker(void *arg) {
     comp->state[comp_slot] = FILTERED_TRACE_SLOT_EMPTY;
     comp->chunk_idx[comp_slot] = -1;
     comp->size[comp_slot] = 0;
+    comp->next_chunk_to_decompress++;  /* Advance to next chunk after successful decompression */
     pthread_cond_broadcast(&comp->cond);  /* Wake reader */
     pthread_mutex_unlock(&comp->mutex);
 
     pthread_mutex_lock(&decomp->mutex);
     decomp->state[dec_slot] = FILTERED_TRACE_SLOT_READY;
-    decomp->next_chunk_to_consume++;
     pthread_cond_broadcast(&decomp->cond);  /* Wake consumer */
     pthread_mutex_unlock(&decomp->mutex);
   }

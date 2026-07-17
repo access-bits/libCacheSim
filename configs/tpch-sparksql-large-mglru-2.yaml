@@ -1,0 +1,188 @@
+trace:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/tpch-sparksql-large/analysis/mglru-2/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/tpch-sparksql-large/analysis/mglru-2
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # ========== MGLRU with window_accesses=240B ==========
+
+  # 10% of 4499392 bytes = 450K
+  - policy: MGLRU
+    cache_size: 449939
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 20% of 4499392 bytes = 900K
+  - policy: MGLRU
+    cache_size: 899878
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 30% of 4499392 bytes = 1350K
+  - policy: MGLRU
+    cache_size: 1349818
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 40% of 4499392 bytes = 1800K
+  - policy: MGLRU
+    cache_size: 1799757
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 50% of 4499392 bytes = 2250K
+  - policy: MGLRU
+    cache_size: 2249696
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 60% of 4499392 bytes = 2700K
+  - policy: MGLRU
+    cache_size: 2699635
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 70% of 4499392 bytes = 3150K
+  - policy: MGLRU
+    cache_size: 3149574
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 80% of 4499392 bytes = 3600K
+  - policy: MGLRU
+    cache_size: 3599513
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 90% of 4499392 bytes = 4050K
+  - policy: MGLRU
+    cache_size: 4049452
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 95% of 4499392 bytes = 4275K
+  - policy: MGLRU
+    cache_size: 4274422
+    eviction_params: "filtered_trace=true,window_accesses=240000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # ========== MGLRU with window_accesses=40B ==========
+
+  # 10% of 4499392 bytes = 450K
+  - policy: MGLRU
+    cache_size: 449939
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 20% of 4499392 bytes = 900K
+  - policy: MGLRU
+    cache_size: 899878
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 30% of 4499392 bytes = 1350K
+  - policy: MGLRU
+    cache_size: 1349818
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 40% of 4499392 bytes = 1800K
+  - policy: MGLRU
+    cache_size: 1799757
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 50% of 4499392 bytes = 2250K
+  - policy: MGLRU
+    cache_size: 2249696
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 60% of 4499392 bytes = 2700K
+  - policy: MGLRU
+    cache_size: 2699635
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 70% of 4499392 bytes = 3150K
+  - policy: MGLRU
+    cache_size: 3149574
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 80% of 4499392 bytes = 3600K
+  - policy: MGLRU
+    cache_size: 3599513
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 90% of 4499392 bytes = 4050K
+  - policy: MGLRU
+    cache_size: 4049452
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 95% of 4499392 bytes = 4275K
+  - policy: MGLRU
+    cache_size: 4274422
+    eviction_params: "filtered_trace=true,window_accesses=40000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"

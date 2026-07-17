@@ -77,6 +77,8 @@ typedef void (*cache_print_cache_func_ptr)(const cache_t *);
 #define EVICTION_AGE_LOG_BASE 1.08
 #define CACHE_NAME_ARRAY_LEN 64
 #define CACHE_INIT_PARAMS_LEN 256
+/* Compact per-worker fail-stop reason copied into final stats. */
+#define CACHE_WORKER_EXIT_REASON_LEN 256
 typedef struct {
   int64_t n_warmup_req;
   int64_t n_req;
@@ -94,6 +96,13 @@ typedef struct {
   int64_t curr_rtime;
   int64_t expired_obj_cnt;
   int64_t expired_bytes;
+
+  /* Worker finished early due to a fail-stop request from policy/base code. */
+  bool worker_exited_early;
+  /* Policy/base supplied status code for post-run triage. */
+  int32_t worker_exit_code;
+  /* Human-readable reason attached to worker_exit_code. */
+  char worker_exit_reason[CACHE_WORKER_EXIT_REASON_LEN];
 
   char cache_name[CACHE_NAME_ARRAY_LEN];
 } cache_stat_t;
@@ -158,6 +167,13 @@ struct cache {
   // cache_stat_t stat;
   char cache_name[CACHE_NAME_ARRAY_LEN];
   char init_params[CACHE_INIT_PARAMS_LEN];
+
+  /* Cooperative worker retirement latch.
+   * Any policy/base path can set this once; simulator workers observe it
+   * and stop consuming more requests for this cache instance. */
+  bool worker_exit_requested;
+  int32_t worker_exit_code;
+  char worker_exit_reason[CACHE_WORKER_EXIT_REASON_LEN];
 
   const char *last_request_metadata;
 #if defined(TRACK_EVICTION_V_AGE)
@@ -235,6 +251,7 @@ cache_obj_t *cache_find_base(cache_t *cache, const request_t *req,
  */
 bool cache_get_base(cache_t *cache, const request_t *req);
 
+
 /**
  * @brief check whether the object can be inserted into the cache
  *
@@ -310,6 +327,19 @@ static inline int64_t cache_get_logical_time(const cache_t *cache) {
 static inline int64_t cache_get_virtual_time(const cache_t *cache) {
   return cache->n_req;
 }
+
+/* Request cooperative worker retirement for this cache.
+ * First writer wins: repeated calls preserve the original code/reason. */
+void cache_request_worker_exit(cache_t *cache, int32_t exit_code,
+                               const char *reason);
+
+/* Read helpers for simulator loops and reporting. */
+bool cache_should_worker_exit(const cache_t *cache);
+
+int32_t cache_get_worker_exit_code(const cache_t *cache);
+
+const char *cache_get_worker_exit_reason(const cache_t *cache);
+
 
 /**
  * @brief print cache stat

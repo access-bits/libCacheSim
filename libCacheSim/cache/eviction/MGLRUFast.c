@@ -81,8 +81,8 @@ typedef struct {
  */
 typedef struct MGLRUGeneration {
   uint64_t seq;
-  cache_obj_t *head; /* oldest in this generation */
-  cache_obj_t *tail; /* newest in this generation */
+  cache_obj_t *head; 
+  cache_obj_t *tail; 
   struct MGLRUGeneration *newer;
   struct MGLRUGeneration *older;
 } MGLRUGeneration;
@@ -107,10 +107,6 @@ typedef struct {
 
   /* Mark state accumulated within the current window. */
   GHashTable *marked_set;
-  /* Scratch array for deterministic mark promotion order. */
-  obj_id_t *marked_ids;
-  int64_t marked_n;
-  int64_t marked_cap;
   /* Fast count of currently marked resident objects. */
   uint64_t marked_count;
 
@@ -138,15 +134,6 @@ typedef struct {
 static inline gpointer mglru_obj_id_to_key(obj_id_t id) {
   /* GLib direct hash keys are pointer-sized integers. */
   return (gpointer)(uintptr_t)id;
-}
-
-/* Used to sort marked IDs before promotion to newest generation. */
-static int mglru_compare_obj_id_asc(const void *a, const void *b) {
-  const obj_id_t oa = *(const obj_id_t *)a;
-  const obj_id_t ob = *(const obj_id_t *)b;
-  if (oa < ob) return -1;
-  if (oa > ob) return 1;
-  return 0;
 }
 
 static inline bool mglru_is_power_of_two(uint32_t x) {
@@ -224,34 +211,6 @@ static inline void mglru_tlb_invalidate_all(MGLRU_params_t *params,
   }
 }
 
-static inline void mglru_marked_reserve(MGLRU_params_t *params, int64_t n) {
-  /* Grow mark scratch buffer geometrically to keep append amortized O(1). */
-  if (params->marked_cap >= n) {
-    return;
-  }
-
-  int64_t new_cap = params->marked_cap == 0 ? 1024 : params->marked_cap;
-  while (new_cap < n) {
-    new_cap *= 2;
-  }
-
-  obj_id_t *new_ids = (obj_id_t *)realloc(params->marked_ids,
-                                          (size_t)new_cap * sizeof(obj_id_t));
-  if (new_ids == NULL) {
-    LOG(ERROR, STREAM_Utils,
-        "MGLRU: failed to grow marked_ids to %ld entries\n",
-        (long)new_cap);
-    abort();
-  }
-
-  params->marked_ids = new_ids;
-  params->marked_cap = new_cap;
-}
-
-static inline bool mglru_is_marked(MGLRU_params_t *params, obj_id_t obj_id) {
-  return g_hash_table_contains(params->marked_set, mglru_obj_id_to_key(obj_id));
-}
-
 /* Unmark on eviction/remove so mark_count reflects current residency. */
 static inline void mglru_unmark(MGLRU_params_t *params, obj_id_t obj_id) {
   if (g_hash_table_remove(params->marked_set, mglru_obj_id_to_key(obj_id))) {
@@ -259,23 +218,19 @@ static inline void mglru_unmark(MGLRU_params_t *params, obj_id_t obj_id) {
   }
 }
 
-/* Mark object once per window and enqueue ID for later promotion pass. */
+/* Mark object once per window. */
 static inline void mglru_mark(MGLRU_params_t *params, obj_id_t obj_id) {
   gpointer key = mglru_obj_id_to_key(obj_id);
   if (g_hash_table_contains(params->marked_set, key)) {
     return;
   }
-
   g_hash_table_add(params->marked_set, key);
   params->marked_count++;
-  mglru_marked_reserve(params, params->marked_n + 1);
-  params->marked_ids[params->marked_n++] = obj_id;
 }
 
 /* Clear all per-window mark state after rotation/promotion. */
 static inline void mglru_clear_marks(MGLRU_params_t *params) {
   g_hash_table_remove_all(params->marked_set);
-  params->marked_n = 0;
   params->marked_count = 0;
 }
 
@@ -339,33 +294,18 @@ static inline void mglru_remove_from_gen(MGLRU_params_t *params, cache_obj_t *ob
   }
 }
 
-/* Move all marked residents into newest generation at window boundary. */
-static void mglru_promote_marked_to_newest(cache_t *cache,
-                                           MGLRU_params_t *params) {
-  if (params->marked_n == 0) {
+/* Fast path: promote touched object immediately. */
+static inline void mglru_promote_obj_to_newest(MGLRU_params_t *params,
+                                               cache_obj_t *obj) {
+  MGLRUGeneration *newest = params->newest_gen;
+  MGLRUGeneration *cur_gen = (MGLRUGeneration *)obj->LruCoarse.bucket;
+  if (cur_gen == NULL || cur_gen == newest) {
     return;
   }
 
-  qsort(params->marked_ids, (size_t)params->marked_n, sizeof(obj_id_t),
-        mglru_compare_obj_id_asc);
-
-  MGLRUGeneration *newest = params->newest_gen;
-  for (int64_t i = 0; i < params->marked_n; i++) {
-    obj_id_t id = params->marked_ids[i];
-    cache_obj_t *obj = hashtable_find_obj_id(cache->hashtable, id);
-    if (obj == NULL) {
-      continue;
-    }
-
-    MGLRUGeneration *cur_gen = (MGLRUGeneration *)obj->LruCoarse.bucket;
-    if (cur_gen == newest) {
-      continue;
-    }
-
-    mglru_remove_from_gen(params, obj);
-    mglru_add_to_gen_tail(obj, newest);
-    params->generation_promotions++;
-  }
+  mglru_remove_from_gen(params, obj);
+  mglru_add_to_gen_tail(obj, newest);
+  params->generation_promotions++;
 }
 
 /* Rotate generations when window fills: create newest, promote, clear marks. */
@@ -377,20 +317,17 @@ static inline void mglru_rotate_generation_if_needed(cache_t *cache,
 
   params->accesses_in_window = 0;
   mglru_create_newest_generation(params);
-  mglru_promote_marked_to_newest(cache, params);
   mglru_clear_marks(params);
 }
 
-/* Primary victim search: first unmarked object from oldest to newest. */
+/* Primary victim search: evict from oldest non-empty generation, excluding newest. */
 static cache_obj_t *mglru_pick_victim_scan(MGLRU_params_t *params) {
   for (MGLRUGeneration *gen = params->oldest_gen; gen != NULL; gen = gen->newer) {
-    for (cache_obj_t *obj = gen->head; obj != NULL; obj = obj->queue.next) {
-      if (!mglru_is_marked(params, obj->obj_id)) {
-        return obj;
-      }
-    }
+    if (gen == params->newest_gen) 
+      break;
+    if (gen->head != NULL) 
+      return gen->head;
   }
-
   return NULL;
 }
 
@@ -517,9 +454,6 @@ cache_t *MGLRU_init(const common_cache_params_t ccache_params,
   MGLRU_parse_params(cache_specific_params, params);
 
   params->marked_set = g_hash_table_new(g_direct_hash, g_direct_equal);
-  params->marked_ids = NULL;
-  params->marked_n = 0;
-  params->marked_cap = 0;
   params->marked_count = 0;
 
   if (!params->filtered_trace && params->tlb_sets > 0) {
@@ -580,7 +514,6 @@ static void MGLRU_free(cache_t *cache) {
   if (params->marked_set != NULL) {
     g_hash_table_destroy(params->marked_set);
   }
-  free(params->marked_ids);
   free(params->tlb);
   free(params);
   cache_struct_free(cache);
@@ -644,6 +577,7 @@ static bool MGLRU_get(cache_t *cache, const request_t *req) {
       params->total_hits++;
       if (!tlb_hit) {
         mglru_mark(params, obj->obj_id);
+        mglru_promote_obj_to_newest(params, obj);
       }
       return true;
     }
@@ -654,6 +588,7 @@ static bool MGLRU_get(cache_t *cache, const request_t *req) {
     if (obj != NULL) {
       params->total_hits++;
       mglru_mark(params, obj->obj_id);
+      mglru_promote_obj_to_newest(params, obj);
       return true;
     }
   }
@@ -694,30 +629,13 @@ static cache_obj_t *MGLRU_to_evict(cache_t *cache, const request_t *req) {
 }
 
 static void MGLRU_evict(cache_t *cache, const request_t *req) {
-  /*
-   * Eviction picks only when not all objects are marked.
-   * If state is all-marked or no victim is found, request cooperative worker
-   * stop instead of spinning forever.
-   */
+  /* Evict oldest resident from generation chain. */
   MGLRU_params_t *params = (MGLRU_params_t *)cache->eviction_params;
-  cache_obj_t *victim = NULL;
-
-  int64_t n_obj = cache->get_n_obj(cache);
-  if (n_obj > 0 && params->marked_count < (uint64_t)n_obj) {
-    victim = MGLRU_to_evict(cache, req);
-  } else {
-    LOG(WARN, STREAM_Utils,
-        "MGLRU: all objects are marked (marked=%lu, n_obj=%ld); requesting worker stop\n",
-        (unsigned long)params->marked_count, (long)n_obj);
-    cache_request_worker_exit(cache, 2,
-                              "MGLRU all-marked state: no evictable victim");
-    return;
-  }
+  cache_obj_t *victim = MGLRU_to_evict(cache, req);
 
   if (victim == NULL) {
     LOG(WARN, STREAM_Utils,
-        "MGLRU: no victim found while marked=%lu n_obj=%ld; requesting worker stop\n",
-        (unsigned long)params->marked_count, (long)n_obj);
+        "MGLRU: no victim found; requesting worker stop\n");
     cache_request_worker_exit(cache, 3,
                               "MGLRU eviction returned no victim");
     return;

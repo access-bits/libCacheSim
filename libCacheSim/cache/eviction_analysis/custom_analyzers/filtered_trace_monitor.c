@@ -13,12 +13,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define FILTERED_TRACE_MONITOR_MAX_BUFFER 128
+
 typedef struct {
-  uint64_t obj_ids[128];      /* Fixed buffer of object IDs */
+  uint64_t obj_ids[FILTERED_TRACE_MONITOR_MAX_BUFFER]; /* Fixed buffer of object IDs */
   int size;                    /* Current count in buffer */
   int max_size;                /* Filter size limit */
   uint64_t evicted_count;      /* Count of evictions found in buffer */
+  uint64_t tag0_count;         /* Diagnostic: objects added (tag=0) */
+  uint64_t tag1_count;         /* Diagnostic: objects removed (tag=1) */
+  uint64_t tag2_count;         /* Diagnostic: single-touch objects (tag=2) */
 } filtered_trace_monitor_t;
+
+#define FILTERED_TRACE_TAG_FEATURE_IDX 1
 
 /* ================================================================
  * Private helpers (fast path)
@@ -42,6 +49,9 @@ static bool obj_in_buffer(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
 static void buffer_add(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
   /* Check if already present */
   if (obj_in_buffer(ftm, obj_id)) {
+    LOG(WARN, STREAM_Cache, 
+        "FilteredTraceMonitor: duplicate tag=0 for object %llu (already in buffer)",
+        (unsigned long long)obj_id);
     return;
   }
 
@@ -67,6 +77,11 @@ static void buffer_remove(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
       return;
     }
   }
+  
+  /* Object not found in buffer - warn about trace inconsistency */
+  LOG(WARN, STREAM_Cache, 
+      "FilteredTraceMonitor: tag=1 for object %llu not in buffer (missing tag=0?)",
+      (unsigned long long)obj_id);
 }
 
 /* ================================================================
@@ -77,7 +92,10 @@ static void ftm_start(eviction_analyzer_t *self) {
   filtered_trace_monitor_t *ftm = (filtered_trace_monitor_t *)self->data;
   ftm->size = 0;
   ftm->evicted_count = 0;
-  LOG(DEBUG, STREAM_Cache, "FilteredTraceMonitor started (filter_size=%d)",
+  ftm->tag0_count = 0;
+  ftm->tag1_count = 0;
+  ftm->tag2_count = 0;
+  LOG(INFO, STREAM_Cache, "FilteredTraceMonitor started (filter_size=%d)",
       ftm->max_size);
 }
 
@@ -86,21 +104,30 @@ static void ftm_process(eviction_analyzer_t *self, cache_obj_t *evicted_obj,
   filtered_trace_monitor_t *ftm = (filtered_trace_monitor_t *)self->data;
 
   /* Check if this request tagged an object */
-  if (req && req->n_features > 0) {
-    uint8_t tag = (uint8_t)req->features[0];
+  if (req && req->n_features > FILTERED_TRACE_TAG_FEATURE_IDX) {
+    uint8_t tag = (uint8_t)req->features[FILTERED_TRACE_TAG_FEATURE_IDX];
 
     if (tag == 0) {
-      /* Tag 0: add to filter buffer */
+      /* Tag 0: object enters trace filter */
       buffer_add(ftm, req->obj_id);
+      ftm->tag0_count++;
     } else if (tag == 1) {
-      /* Tag 1: remove from filter buffer */
+      /* Tag 1: object leaves trace filter (normal multi-touch exit) */
       buffer_remove(ftm, req->obj_id);
+      ftm->tag1_count++;
+    } else if (tag == 2) {
+      /* Tag 2: single-touch object (entered and left in same window) */
+      /* Don't add to buffer since it's already gone */
+      ftm->tag2_count++;
     }
   }
 
-  /* Check if evicted object is in buffer */
+  /* Check if evicted cache object is currently in trace filter */
   if (evicted_obj != NULL) {
     if (obj_in_buffer(ftm, evicted_obj->obj_id)) {
+      LOG(INFO, STREAM_Cache,
+          "FilteredTraceMonitor: object %llu evicted while in filter (buffer_size=%d/%d)",
+          (unsigned long long)evicted_obj->obj_id, ftm->size, ftm->max_size);
       ftm->evicted_count++;
     }
   }
@@ -110,8 +137,14 @@ static void ftm_finalize(eviction_analyzer_t *self, const char *output_dir) {
   filtered_trace_monitor_t *ftm = (filtered_trace_monitor_t *)self->data;
 
   LOG(INFO, STREAM_Cache,
-      "FilteredTraceMonitor: %llu objects evicted from filter buffer",
-      (unsigned long long)ftm->evicted_count);
+      "FilteredTraceMonitor Summary: evicted_from_filter=%llu, "
+      "tag0_entries=%llu, tag1_entries=%llu, tag2_entries=%llu, "
+      "buffer_final_size=%d",
+      (unsigned long long)ftm->evicted_count,
+      (unsigned long long)ftm->tag0_count,
+      (unsigned long long)ftm->tag1_count,
+      (unsigned long long)ftm->tag2_count,
+      ftm->size);
 }
 
 static void ftm_free(eviction_analyzer_t *self) {
@@ -125,8 +158,8 @@ static void ftm_free(eviction_analyzer_t *self) {
 
 eviction_analyzer_t *filtered_trace_monitor_create(const char *name,
                                                     const char *params) {
-  /* Parse filter_size from params string (e.g., "64" or "filter_size=64") */
-  int filter_size = 64;  /* Default */
+  /* Parse filter_size from params string (e.g., "32" or "filter_size=32") */
+  int filter_size = 32;  /* Default: match trace generator filter size */
   
   if (params && strlen(params) > 0) {
     /* Try to parse as direct integer first */
@@ -138,6 +171,20 @@ eviction_analyzer_t *filtered_trace_monitor_create(const char *name,
         return NULL;
       }
     }
+  }
+
+  if (filter_size <= 0) {
+    LOG(WARN, STREAM_Cache,
+        "FilteredTraceMonitor: invalid filter_size=%d, using default 32",
+        filter_size);
+    filter_size = 32;
+  }
+
+  if (filter_size > FILTERED_TRACE_MONITOR_MAX_BUFFER) {
+    LOG(WARN, STREAM_Cache,
+        "FilteredTraceMonitor: filter_size=%d exceeds max %d, clamping",
+        filter_size, FILTERED_TRACE_MONITOR_MAX_BUFFER);
+    filter_size = FILTERED_TRACE_MONITOR_MAX_BUFFER;
   }
 
   filtered_trace_monitor_t *ftm = malloc(sizeof(filtered_trace_monitor_t));
