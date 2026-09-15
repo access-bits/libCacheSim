@@ -1,0 +1,106 @@
+trace:
+  path: /memory_traces/icparsa1/pagerank-large/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/pagerank-large/analysis/mglru-3/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/pagerank-large/analysis/mglru-3
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # ========== MGLRU with window_accesses=8B ==========
+
+  # 10% of 2490304 objects = 249030
+  - policy: MGLRU
+    cache_size: 249030
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 20% of 2490304 objects = 498060
+  - policy: MGLRU
+    cache_size: 498060
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 30% of 2490304 objects = 747091
+  - policy: MGLRU
+    cache_size: 747091
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 40% of 2490304 objects = 996121
+  - policy: MGLRU
+    cache_size: 996121
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 50% of 2490304 objects = 1245152
+  - policy: MGLRU
+    cache_size: 1245152
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 60% of 2490304 objects = 1494182
+  - policy: MGLRU
+    cache_size: 1494182
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 70% of 2490304 objects = 1743212
+  - policy: MGLRU
+    cache_size: 1743212
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 80% of 2490304 objects = 1992243
+  - policy: MGLRU
+    cache_size: 1992243
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 90% of 2490304 objects = 2241273
+  - policy: MGLRU
+    cache_size: 2241273
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 95% of 2490304 objects = 2365788
+  - policy: MGLRU
+    cache_size: 2365788
+    eviction_params: "filtered_trace=true,window_accesses=8000000000"
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"

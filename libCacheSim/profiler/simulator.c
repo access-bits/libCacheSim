@@ -129,6 +129,9 @@ static int bqueue_process_batch(bounded_queue_t *q, cache_t *cache,
     if (*consumed <= n_warmup_req ||
         (warmup_sec > 0 && req->clock_time < (int64_t)warmup_sec)) {
       cache->get(cache, req);
+      /* Notify analyzers; cache->last_evicted_id is reset to OBJ_ID_NONE inside. */
+      cache_notify_eviction_analyzers(cache, req);
+
       result->n_warmup_req++;
       if (cache_should_worker_exit(cache)) {
         /* Drain and close queue so reader no longer waits/pushes this worker. */
@@ -150,6 +153,8 @@ static int bqueue_process_batch(bounded_queue_t *q, cache_t *cache,
       result->n_miss_byte += req->obj_size;
       result->n_miss_cost += req->obj_cost;
     }
+    /* Notify analyzers; cache->last_evicted_id is reset to OBJ_ID_NONE inside. */
+    cache_notify_eviction_analyzers(cache, req);
 
     if (cache_should_worker_exit(cache)) {
       /* Same retirement path for measured phase. */

@@ -113,7 +113,6 @@ void cache_finalize_eviction_analyzers(cache_t *cache,
 }
 
 void cache_notify_eviction_analyzers(cache_t *cache,
-                                     cache_obj_t *evicted_obj,
                                      request_t *req) {
   if (!cache || !req) {
     return;
@@ -125,9 +124,11 @@ void cache_notify_eviction_analyzers(cache_t *cache,
   for (int i = 0; i < reg->n_analyzers; i++) {
     eviction_analyzer_t *analyzer = reg->analyzers[i];
     if (analyzer && analyzer->process) {
-      analyzer->process(analyzer, evicted_obj, req);
+      analyzer->process(analyzer, cache->last_evicted_id, req);
     }
   }
+  /* Reset so the same eviction is not reported again on the next request. */
+  cache->last_evicted_id = OBJ_ID_NONE;
 }
 
 /**

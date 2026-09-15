@@ -1,0 +1,136 @@
+trace:
+  path: /memory_traces/icparsa1/memcached-zipfian-large/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/memcached-zipfian-large/analysis/random/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/memcached-zipfian-large/analysis/random
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # 10% of 2159117 objects = 215911
+  - policy: Random
+    cache_size: 215911
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 20% of 2159117 objects = 431823
+  - policy: Random
+    cache_size: 431823
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 30% of 2159117 objects = 647735
+  - policy: Random
+    cache_size: 647735
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 40% of 2159117 objects = 863646
+  - policy: Random
+    cache_size: 863646
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 50% of 2159117 objects = 1079558
+  - policy: Random
+    cache_size: 1079558
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 60% of 2159117 objects = 1295470
+  - policy: Random
+    cache_size: 1295470
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 70% of 2159117 objects = 1511381
+  - policy: Random
+    cache_size: 1511381
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 80% of 2159117 objects = 1727293
+  - policy: Random
+    cache_size: 1727293
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 90% of 2159117 objects = 1943205
+  - policy: Random
+    cache_size: 1943205
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 95% of 2159117 objects = 2051161
+  - policy: Random
+    cache_size: 2051161
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 35% of 2159117 objects = 755690
+  # - policy: Random
+  #   cache_size: 755690
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 45% of 2159117 objects = 971602
+  # - policy: Random
+  #   cache_size: 971602
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 55% of 2159117 objects = 1187514
+  # - policy: Random
+  #   cache_size: 1187514
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 65% of 2159117 objects = 1403426
+  # - policy: Random
+  #   cache_size: 1403426
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 75% of 2159117 objects = 1619337
+  # - policy: Random
+  #   cache_size: 1619337
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 85% of 2159117 objects = 1835249
+  # - policy: Random
+  #   cache_size: 1835249
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"

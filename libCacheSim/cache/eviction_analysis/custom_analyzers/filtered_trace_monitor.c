@@ -23,6 +23,10 @@ typedef struct {
   uint64_t tag0_count;         /* Diagnostic: objects added (tag=0) */
   uint64_t tag1_count;         /* Diagnostic: objects removed (tag=1) */
   uint64_t tag2_count;         /* Diagnostic: single-touch objects (tag=2) */
+  uint64_t req_count;          /* Total requests processed */
+  uint64_t buffer_overflow_count; /* Count of buffer overflow warnings */
+  uint64_t object_not_found_count; /* Count of tag=1 for objects not found in buffer */
+  uint64_t object_already_in_buffer_count; /* Count of tag=0 for objects already in buffer */
 } filtered_trace_monitor_t;
 
 #define FILTERED_TRACE_TAG_FEATURE_IDX 1
@@ -49,9 +53,10 @@ static bool obj_in_buffer(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
 static void buffer_add(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
   /* Check if already present */
   if (obj_in_buffer(ftm, obj_id)) {
-    LOG(WARN, STREAM_Cache, 
-        "FilteredTraceMonitor: duplicate tag=0 for object %llu (already in buffer)",
-        (unsigned long long)obj_id);
+    // LOG(WARN, STREAM_Cache, 
+    //     "FilteredTraceMonitor: duplicate tag=0 for object %llu (already in buffer)",
+    //     (unsigned long long)obj_id);
+    ftm->object_already_in_buffer_count++;
     return;
   }
 
@@ -59,10 +64,11 @@ static void buffer_add(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
   if (ftm->size < ftm->max_size) {
     ftm->obj_ids[ftm->size++] = obj_id;
   } else {
-    /* Buffer would overflow — warn */
-    LOG(WARN, STREAM_Cache, 
-        "FilteredTraceMonitor: buffer full (%d/%d), dropping object %llu",
-        ftm->size, ftm->max_size, (unsigned long long)obj_id);
+    // /* Buffer would overflow — warn */
+    // LOG(WARN, STREAM_Cache, 
+    //     "FilteredTraceMonitor: buffer full (%d/%d), dropping object %llu",
+    //     ftm->size, ftm->max_size, (unsigned long long)obj_id);
+    ftm->buffer_overflow_count++;
   }
 }
 
@@ -79,9 +85,10 @@ static void buffer_remove(filtered_trace_monitor_t *ftm, uint64_t obj_id) {
   }
   
   /* Object not found in buffer - warn about trace inconsistency */
-  LOG(WARN, STREAM_Cache, 
-      "FilteredTraceMonitor: tag=1 for object %llu not in buffer (missing tag=0?)",
-      (unsigned long long)obj_id);
+  ftm->object_not_found_count++;
+  // LOG(WARN, STREAM_Cache, 
+  //     "FilteredTraceMonitor: tag=1 for object %llu not in buffer (missing tag=0?)",
+  //     (unsigned long long)obj_id);
 }
 
 /* ================================================================
@@ -95,11 +102,15 @@ static void ftm_start(eviction_analyzer_t *self) {
   ftm->tag0_count = 0;
   ftm->tag1_count = 0;
   ftm->tag2_count = 0;
+  ftm->req_count = 0;
+  ftm->buffer_overflow_count = 0;
+  ftm->object_not_found_count = 0;
+  ftm->object_already_in_buffer_count = 0;
   LOG(INFO, STREAM_Cache, "FilteredTraceMonitor started (filter_size=%d)",
       ftm->max_size);
 }
 
-static void ftm_process(eviction_analyzer_t *self, cache_obj_t *evicted_obj,
+static void ftm_process(eviction_analyzer_t *self, obj_id_t evicted_id,
                         request_t *req) {
   filtered_trace_monitor_t *ftm = (filtered_trace_monitor_t *)self->data;
 
@@ -122,13 +133,22 @@ static void ftm_process(eviction_analyzer_t *self, cache_obj_t *evicted_obj,
     }
   }
 
+  ftm->req_count++;
+  if (ftm->req_count % 25165824 == 0) {
+    LOG(INFO, STREAM_Cache,
+        "FilteredTraceMonitor: processed %llu requests, buffer_size=%d/%d, evicted_from_filter=%llu, buffer_overflow_count=%llu, object_not_found_count=%llu, object_already_in_buffer_count=%llu", 
+        (unsigned long long)ftm->req_count, ftm->size, ftm->max_size,
+        (unsigned long long)ftm->evicted_count,
+        (unsigned long long)ftm->buffer_overflow_count,
+        (unsigned long long)ftm->object_not_found_count,
+        (unsigned long long)ftm->object_already_in_buffer_count);
+  }
+
   /* Check if evicted cache object is currently in trace filter */
-  if (evicted_obj != NULL) {
-    if (obj_in_buffer(ftm, evicted_obj->obj_id)) {
-      LOG(INFO, STREAM_Cache,
-          "FilteredTraceMonitor: object %llu evicted while in filter (buffer_size=%d/%d)",
-          (unsigned long long)evicted_obj->obj_id, ftm->size, ftm->max_size);
+  if (evicted_id != OBJ_ID_NONE) {
+    if (obj_in_buffer(ftm, evicted_id)) {
       ftm->evicted_count++;
+      buffer_remove(ftm, evicted_id);  /* Remove from buffer */
     }
   }
 }
@@ -139,12 +159,15 @@ static void ftm_finalize(eviction_analyzer_t *self, const char *output_dir) {
   LOG(INFO, STREAM_Cache,
       "FilteredTraceMonitor Summary: evicted_from_filter=%llu, "
       "tag0_entries=%llu, tag1_entries=%llu, tag2_entries=%llu, "
-      "buffer_final_size=%d",
+      "buffer_final_size=%d, buffer_overflow_count=%llu, object_not_found_count=%llu, object_already_in_buffer_count=%llu", 
       (unsigned long long)ftm->evicted_count,
       (unsigned long long)ftm->tag0_count,
       (unsigned long long)ftm->tag1_count,
       (unsigned long long)ftm->tag2_count,
-      ftm->size);
+      ftm->size,
+      (unsigned long long)ftm->buffer_overflow_count,
+      (unsigned long long)ftm->object_not_found_count,
+      (unsigned long long)ftm->object_already_in_buffer_count);
 }
 
 static void ftm_free(eviction_analyzer_t *self) {
@@ -195,7 +218,9 @@ eviction_analyzer_t *filtered_trace_monitor_create(const char *name,
   ftm->size = 0;
   ftm->max_size = filter_size;
   ftm->evicted_count = 0;
-
+  ftm->object_not_found_count = 0;
+  ftm->object_already_in_buffer_count = 0;
+  ftm->buffer_overflow_count = 0;
   eviction_analyzer_t *analyzer = malloc(sizeof(eviction_analyzer_t));
   if (!analyzer) {
     free(ftm);

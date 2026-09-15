@@ -1,0 +1,136 @@
+trace:
+  path: /memory_traces/icparsa1/inmemory-analytics/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/inmemory-analytics/analysis/random/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/inmemory-analytics/analysis/random
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # 10% of 5244325 bytes = 524K
+  - policy: Random
+    cache_size: 524432
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 20% of 5244325 bytes = 1049K
+  - policy: Random
+    cache_size: 1048865
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 30% of 5244325 bytes = 1573K
+  - policy: Random
+    cache_size: 1573297
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 40% of 5244325 bytes = 2098K
+  - policy: Random
+    cache_size: 2097730
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 50% of 5244325 bytes = 2622K
+  - policy: Random
+    cache_size: 2622162
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 60% of 5244325 bytes = 3147K
+  - policy: Random
+    cache_size: 3146595
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 70% of 5244325 bytes = 3671K
+  - policy: Random
+    cache_size: 3671027
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 80% of 5244325 bytes = 4195K
+  - policy: Random
+    cache_size: 4195460
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 90% of 5244325 bytes = 4720K
+  - policy: Random
+    cache_size: 4719892
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 95% of 5244325 bytes = 4982K
+  - policy: Random
+    cache_size: 4982108
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "32"
+
+  # 35% of 5244325 bytes = 1836K
+  # - policy: Random
+  #   cache_size: 1835513
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 45% of 5244325 bytes = 2360K
+  # - policy: Random
+  #   cache_size: 2359946
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 55% of 5244325 bytes = 2884K
+  # - policy: Random
+  #   cache_size: 2884378
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 65% of 5244325 bytes = 3409K
+  # - policy: Random
+  #   cache_size: 3408811
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 75% of 5244325 bytes = 3933K
+  # - policy: Random
+  #   cache_size: 3933243
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"
+
+  # 85% of 5244325 bytes = 4458K
+  # - policy: Random
+  #   cache_size: 4457676
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "32"

@@ -1,0 +1,136 @@
+trace:
+  path: /memory_traces/icparsa1/pagerank-large/compressed-trace/compressed_trace.zstd
+  type: oracleFilteredReverse
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 4194304
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/pagerank-large/analysis/belady/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/pagerank-large/analysis/belady
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # 10% of 2490304 objects = 249030
+  - policy: Belady
+    cache_size: 249030
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 20% of 2490304 objects = 498060
+  - policy: Belady
+    cache_size: 498060
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 30% of 2490304 objects = 747091
+  - policy: Belady
+    cache_size: 747091
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 40% of 2490304 objects = 996121
+  - policy: Belady
+    cache_size: 996121
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 50% of 2490304 objects = 1245152
+  - policy: Belady
+    cache_size: 1245152
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 60% of 2490304 objects = 1494182
+  - policy: Belady
+    cache_size: 1494182
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 70% of 2490304 objects = 1743212
+  - policy: Belady
+    cache_size: 1743212
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 80% of 2490304 objects = 1992243
+  - policy: Belady
+    cache_size: 1992243
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 90% of 2490304 objects = 2241273
+  - policy: Belady
+    cache_size: 2241273
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 95% of 2490304 objects = 2365788
+  - policy: Belady
+    cache_size: 2365788
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 35% of 2490304 objects = 871606
+  # - policy: LRU
+  #   cache_size: 871606
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 45% of 2490304 objects = 1120636
+  # - policy: LRU
+  #   cache_size: 1120636
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 55% of 2490304 objects = 1369667
+  # - policy: LRU
+  #   cache_size: 1369667
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 65% of 2490304 objects = 1618697
+  # - policy: LRU
+  #   cache_size: 1618697
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 75% of 2490304 objects = 1867728
+  # - policy: LRU
+  #   cache_size: 1867728
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 85% of 2490304 objects = 2116758
+  # - policy: LRU
+  #   cache_size: 2116758
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"

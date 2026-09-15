@@ -23,6 +23,14 @@
 extern "C" {
 #endif
 
+/* obj_id_t mirrored to avoid circular include of cacheObj.h */
+#ifndef OBJ_ID_T_DEFINED
+#define OBJ_ID_T_DEFINED
+typedef uint64_t obj_id_t;
+#endif
+/* Sentinel meaning "no eviction happened on this request". */
+#define OBJ_ID_NONE ((obj_id_t)UINT64_MAX)
+
 /* Forward declarations */
 typedef struct cache cache_t;
 typedef struct cache_obj cache_obj_t;
@@ -45,11 +53,11 @@ typedef struct eviction_analyzer {
   /**
    * Called on every cache request.
    * @param self              analyzer instance
-   * @param evicted_obj       object that was evicted (NULL if no eviction)
+   * @param evicted_id        obj_id of the evicted object, or OBJ_ID_NONE if no eviction
    * @param req               the request that triggered this (never NULL)
    */
   void (*process)(struct eviction_analyzer *self,
-                  cache_obj_t *evicted_obj,
+                  obj_id_t evicted_id,
                   request_t *req);
 
   /**
@@ -96,14 +104,12 @@ void cache_finalize_eviction_analyzers(cache_t *cache,
 
 /**
  * Internal: Notify all registered analyzers of a request.
- * Called by cache after eviction decision is made.
+ * Reads cache->last_evicted_id, passes it to every analyzer, then resets it to OBJ_ID_NONE.
  *
  * @param cache        cache instance
- * @param evicted_obj  object evicted (NULL if no eviction)
  * @param req          the request
  */
 void cache_notify_eviction_analyzers(cache_t *cache,
-                                     cache_obj_t *evicted_obj,
                                      request_t *req);
 
 /**

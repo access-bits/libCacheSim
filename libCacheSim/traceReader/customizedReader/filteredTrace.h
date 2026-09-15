@@ -169,9 +169,7 @@ static inline void filteredTrace_set_features(request_t *req,
                                               uint32_t frequency) {
   req->features[FILTERED_TRACE_TAG_FEATURE_IDX] = (int32_t)tag;
   req->features[FILTERED_TRACE_FREQ_FEATURE_IDX] = (int32_t)frequency;
-  if (req->n_features <= FILTERED_TRACE_FREQ_FEATURE_IDX) {
-    req->n_features = FILTERED_TRACE_FREQ_FEATURE_IDX + 1;
-  }
+  req->n_features = (FILTERED_TRACE_FREQ_FEATURE_IDX > FILTERED_TRACE_TAG_FEATURE_IDX ? FILTERED_TRACE_FREQ_FEATURE_IDX : FILTERED_TRACE_TAG_FEATURE_IDX) + 1;
 }
 
 /*

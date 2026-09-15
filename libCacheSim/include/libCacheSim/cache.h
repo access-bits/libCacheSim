@@ -132,7 +132,8 @@ struct cache {
 
   /* Eviction analyzers — called on every request */
   eviction_analyzer_registry_t analyzer_registry;
-  cache_obj_t *last_evicted_obj;  /* Temporary: last evicted object for analyzer */
+  /* ID of the last evicted object for analyzers; OBJ_ID_NONE when no eviction happened. */
+  obj_id_t last_evicted_id;
 
   void *eviction_params;
 
