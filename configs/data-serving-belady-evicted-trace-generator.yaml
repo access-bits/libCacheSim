@@ -1,0 +1,33 @@
+trace:
+  path: /memory_traces/icparsa1/data-serving/oracle-trace/oracle_trace.zstd
+  type: oracleFilteredReverse
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 8388608
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/data-serving/analysis/belady-evicted-trace-generation/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/data-serving/analysis/belady-evicted-trace-generation
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # 20% of 2316246 bytes = 463K
+  - policy: Belady
+    cache_size: 463249
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+      - type: eviction_trace_writer
+        params: "/memory_traces/icparsa1/data-serving/analysis/belady-evicted-trace-generation/evicted_trace.csv"

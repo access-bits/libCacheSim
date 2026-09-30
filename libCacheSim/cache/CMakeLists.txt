@@ -134,6 +134,7 @@ set(eviction_analysis_sources_c
     eviction_analysis/eviction_analyzer_registry.c
     eviction_analysis/eviction_analyzer_factory.c
     eviction_analysis/custom_analyzers/filtered_trace_monitor.c
+    eviction_analysis/custom_analyzers/eviction_trace_writer.c
 )
 
 # ==============================================================================

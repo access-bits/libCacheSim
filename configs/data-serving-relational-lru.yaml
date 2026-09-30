@@ -1,0 +1,136 @@
+trace:
+  path: /memory_traces/icparsa1/data-serving-relational/compressed-trace/compressed_trace.zstd
+  type: filteredTrace
+  params: ""
+  num_req: -1
+  sample_ratio: 1.0
+
+global:
+  report_interval: 25165824
+  queue_depth: 8388608
+  ignore_obj_size: false
+  consider_obj_metadata: false
+  verbose: true
+  print_head_req: true
+
+output:
+  path: /memory_traces/icparsa1/data-serving-relational/analysis/lru/cachesim_results.txt
+
+logging:
+  dir: /memory_traces/icparsa1/data-serving-relational/analysis/lru
+  level: INFO
+  streams: ALL
+
+configurations:
+
+  # 10% of 6908240 bytes = 691K
+  - policy: LRU
+    cache_size: 690824
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 20% of 6908240 bytes = 1382K
+  - policy: LRU
+    cache_size: 1381648
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 30% of 6908240 bytes = 2072K
+  - policy: LRU
+    cache_size: 2072472
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 40% of 6908240 bytes = 2763K
+  - policy: LRU
+    cache_size: 2763296
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 50% of 6908240 bytes = 3454K
+  - policy: LRU
+    cache_size: 3454120
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 60% of 6908240 bytes = 4145K
+  - policy: LRU
+    cache_size: 4144944
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 70% of 6908240 bytes = 4836K
+  - policy: LRU
+    cache_size: 4835768
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 80% of 6908240 bytes = 5527K
+  - policy: LRU
+    cache_size: 5526592
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 90% of 6908240 bytes = 6217K
+  - policy: LRU
+    cache_size: 6217416
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 95% of 6908240 bytes = 6563K
+  - policy: LRU
+    cache_size: 6562828
+    eviction_analyzers:
+      - type: filtered_trace_monitor
+        params: "64"
+
+  # 35% of 6908240 bytes = 2418K
+  # - policy: LRU
+  #   cache_size: 2417884
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 45% of 6908240 bytes = 3109K
+  # - policy: LRU
+  #   cache_size: 3108708
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 55% of 6908240 bytes = 3800K
+  # - policy: LRU
+  #   cache_size: 3799532
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 65% of 6908240 bytes = 4490K
+  # - policy: LRU
+  #   cache_size: 4490356
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 75% of 6908240 bytes = 5181K
+  # - policy: LRU
+  #   cache_size: 5181180
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"
+
+  # 85% of 6908240 bytes = 5872K
+  # - policy: LRU
+  #   cache_size: 5872004
+  #   eviction_analyzers:
+  #     - type: filtered_trace_monitor
+  #       params: "64"

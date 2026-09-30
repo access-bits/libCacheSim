@@ -7,6 +7,7 @@
 #include "libCacheSim/eviction_analyzer_factory.h"
 #include "libCacheSim/eviction_analyzer.h"
 #include "custom_analyzers/filtered_trace_monitor.h"
+#include "custom_analyzers/eviction_trace_writer.h"
 
 #include "libCacheSim/cache.h"
 #include "libCacheSim/log.h"
@@ -33,6 +34,7 @@ typedef struct {
 
 static const analyzer_registry_entry_t analyzer_registry[] = {
     {"filtered_trace_monitor", filtered_trace_monitor_create},
+    {"eviction_trace_writer", eviction_trace_writer_create},
 };
 
 static const int N_REGISTERED_ANALYZERS =
